@@ -52,7 +52,7 @@ void setup(){
   arial_bold = createFont("Arial Bold", 12);
   arial = createFont("Arial", 12);
   // begin serial connection  
-  port = new Serial(this, "COM8", 115200);
+  port = new Serial(this, "COM7", 9600);
   port.bufferUntil('\n');  
   delay(1000);    
 }

@@ -1,64 +1,77 @@
+/**
+    Velociruabtor V2
+    velociruabtor_v2_teensy.ino
+    Purpose: Develop a line follower using Teensy 3.2
+
+    @author Steven Macías and Victor Escobedo
+    @version 1.0 22/04/2019
+*/
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <QTRSensors.h>
 #include "Accelerometer.h"
-#include "ArraySensors.h"
 
 #define BT_SERIAL Serial1
 #define CABLE_SERIAL Serial
-#define UART_BAUDRATE 115200
+#define BT_UART_BAUDRATE 38400
+#define CABLE_UART_BAUDRATE 115200
+#define NUM_SENSORS 6
 
-
-// Sketch for the ADXL335
-// Reads the raw X, Y Z values from the accelerometer and normalizes them to +/-1 range.
-// Tested on the Teensy 3.1
-// For use with project found at
-// http://codergirljp.blogspot.com/2014/05/adxl335-accelerometer-on-teensy-31.html
-QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN); // sensor connected through analog pins A0 - A5 i.e. digital pins 14-19
-struct jsonStruct
-{
-  float xAccel;
-  float yAccel;
-  float zAccel;
-} ;
+QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
-struct jsonStruct json_struct;
 Accelerometer accel;
-ArraySensors array_sensors;
 int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
 
-void setup()
+/**
+    Calibrates the QTR-RC Sensor array
+    @param none
+    @return void
+*/
+void calibrateQtrc()
 {
-  json.clear();
-  BT_SERIAL.begin(UART_BAUDRATE);\
-  CABLE_SERIAL.begin(UART_BAUDRATE);\
-  accel = Accelerometer();
-  array_sensors = ArraySensors();
-  pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   for(int i = 0; i<300; i++)
   {
     qtrrc.calibrate();
-    //delay(20);
   }
   digitalWrite(LED_BUILTIN, LOW);
 }
 
+/**
+    Function that initializes the system
+    @param none
+    @return void
+*/
+void setup()
+{
+  json.clear();
+  // Configure Bluetooth UART
+  BT_SERIAL.begin(BT_UART_BAUDRATE);
+  // Configure USB UART
+  CABLE_SERIAL.begin(CABLE_UART_BAUDRATE);
+  // Create Objects
+  accel = Accelerometer();
+  // Configure Built In LED
+  pinMode(LED_BUILTIN, OUTPUT);
+  // Calibrate Sensors Array
+  calibrateQtrc();
+}
+
+/**
+    Builds a JSON string that contains all the data regarging the line follower.
+    @param none
+    @return void
+*/
 void buildAccelJson()
 {
   json.clear();
   // Acceleremoter values
-  json_struct.xAccel = accel.getX();
-  json["xAccel"] = json_struct.xAccel;
-  json_struct.yAccel = accel.getY();
-  json["yAccel"] = json_struct.yAccel;
-  json_struct.zAccel = accel.getZ();
-  json["zAccel"] = json_struct.zAccel;
+  json["xAccel"] = accel.getX();
+  json["yAccel"] = accel.getY();
+  json["zAccel"] = accel.getY();
 
   // Array Sensors values
-  uint16_t* array_calib_min_ptr = array_sensors.getCalibrationMin();
-  uint16_t* array_calib_max_ptr = array_sensors.getCalibrationMax();
   uint8_t i;
   for(i=0; i<NUM_SENSORS; i++)
   {
@@ -70,13 +83,17 @@ void buildAccelJson()
   json["array_position"] = position;
 }
 
+/**
+    Main loop of the project
+    @param none
+    @return void
+*/
 void loop()
 {
   accel.getData();
   buildAccelJson();
   serializeJson(json, BT_SERIAL);
   serializeJson(json, CABLE_SERIAL);
-  BT_SERIAL.print('\n');\
-  CABLE_SERIAL.print('\n');\
-  delay(100);
+  BT_SERIAL.print('\n');
+  CABLE_SERIAL.print('\n');
 }
