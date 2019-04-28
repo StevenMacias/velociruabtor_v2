@@ -24,6 +24,32 @@ int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
 
 /**
+    Builds a JSON string that contains all the data regarging the line follower.
+    @param none
+    @return void
+*/
+void buildAccelJson()
+{
+  json.clear();
+  // Acceleremoter values
+  json["xAccel"] = accel.getX();
+  json["yAccel"] = accel.getY();
+  json["zAccel"] = accel.getZ();
+
+  // Array Sensors values
+  uint8_t i;
+  for(i=0; i<NUM_SENSORS; i++)
+  {
+    json["array_calib_min"].add(qtrrc.calibratedMinimumOn[i]);
+    json["array_calib_max"].add(qtrrc.calibratedMaximumOn[i]);
+    position = qtrrc.readLine(sensorValues);
+    json["array_values"].add(sensorValues[i]);
+  }
+  json["array_position"] = position;
+}
+
+
+/**
     Calibrates the QTR-RC Sensor array
     @param none
     @return void
@@ -56,31 +82,6 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   // Calibrate Sensors Array
   calibrateQtrc();
-}
-
-/**
-    Builds a JSON string that contains all the data regarging the line follower.
-    @param none
-    @return void
-*/
-void buildAccelJson()
-{
-  json.clear();
-  // Acceleremoter values
-  json["xAccel"] = accel.getX();
-  json["yAccel"] = accel.getY();
-  json["zAccel"] = accel.getZ();
-
-  // Array Sensors values
-  uint8_t i;
-  for(i=0; i<NUM_SENSORS; i++)
-  {
-    json["array_calib_min"].add(qtrrc.calibratedMinimumOn[i]);
-    json["array_calib_max"].add(qtrrc.calibratedMaximumOn[i]);
-    position = qtrrc.readLine(sensorValues);
-    json["array_values"].add(sensorValues[i]);
-  }
-  json["array_position"] = position;
 }
 
 /**
