@@ -69,7 +69,7 @@ void buildAccelJson()
   // Acceleremoter values
   json["xAccel"] = accel.getX();
   json["yAccel"] = accel.getY();
-  json["zAccel"] = accel.getY();
+  json["zAccel"] = accel.getZ();
 
   // Array Sensors values
   uint8_t i;
