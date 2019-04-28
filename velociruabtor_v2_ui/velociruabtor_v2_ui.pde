@@ -11,7 +11,7 @@ import processing.serial.*;
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "COM7";
+static final String COM_PORT  = "/dev/ttyACM0";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
