@@ -11,7 +11,7 @@ import processing.serial.*;
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "/dev/ttyACM0";
+static final String COM_PORT  = "/dev/pts/5";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
@@ -51,6 +51,14 @@ JSONArray array_calib_min;
 JSONArray array_calib_max;
 JSONArray array_values;
 
+
+
+/*BUTTON*/
+float x = 500;
+float y = 250;
+float w = 150;
+float h = 80;
+
 /**
     Draw the graph regarding accelerometer values.
     @param none
@@ -80,6 +88,33 @@ void drawAccelerometerGraph()
   text(accel_z_raw_value, (accel_graph_x_pos+25), (accel_graph_size+accel_graph_y_pos-0));
 }
 
+
+void drawMotorDriverGraph()
+{
+  int[] temp_array_values = array_values.getIntArray();
+  for(int i = 0; i<array_calib_min.size(); i++)
+  {
+    text(temp_array_values[i], (array_values_x_pos+(40*(i))), array_values_y_pos+20);
+    fill(map(temp_array_values[i],0,1000,0,255));
+    stroke(255);
+    rect((array_values_x_pos+(40*(i))), (array_values_y_pos+35), 30, 5);
+    fill(255);
+  }
+  
+  stroke(accel_grid_color);
+  // Motor L Line
+  line((accel_graph_size+accel_z_graph_x_pos+array_values_x_pos),(0+accel_z_graph_y_pos),(accel_z_graph_x_pos+accel_graph_size+array_values_x_pos),(accel_graph_size+accel_z_graph_y_pos));
+  // Motor L Ellipse
+  noStroke();
+  fill(255,0,0);
+  ellipse((accel_graph_size+accel_z_graph_x_pos+array_values_x_pos), (temp_array_values[1]+accel_z_graph_y_pos+(accel_graph_half_size/2)), accel_graph_point_size, accel_graph_point_size);
+  // draw the text
+  fill(255);
+  text("MOTOR L: ", (accel_graph_x_pos+10+array_values_x_pos), (accel_graph_size+accel_graph_y_pos-0));
+  text(temp_array_values[1], (accel_graph_x_pos+25+array_values_x_pos), (accel_graph_size+accel_graph_y_pos-0));
+}
+
+
 /**
     Draw graph regarding sensor array
     @param none
@@ -91,6 +126,7 @@ void drawSensorArrayGraph()
   text("Calibration values", (calib_values_x_pos), calib_values_y_pos);
   text("IR array values", (array_values_x_pos), array_values_y_pos);
   text("Accelerometer", (accel_graph_x_pos), accel_graph_y_pos-10);
+  text("Motor driver", (array_values_x_pos), accel_graph_y_pos-10);
   int[] temp_min_values = array_calib_min.getIntArray();
   int[] temp_max_values = array_calib_max.getIntArray();
   int[] temp_array_values = array_values.getIntArray();
@@ -108,6 +144,8 @@ void drawSensorArrayGraph()
     fill(255);
   }
 }
+
+
 
 /**
     Function that is called everytime a JSON string arrives through the UART
@@ -170,4 +208,13 @@ void draw()
   background(background_color);
   drawAccelerometerGraph();
   drawSensorArrayGraph();
+  drawMotorDriverGraph();
+  circle(x, y, w);
+  if(mousePressed){
+    if(mouseX>x && mouseX <x+w && mouseY>y && mouseY <y+h){
+     println("Steven esto parece que funciona ninio");
+     fill(0);
+     //do stuff 
+    }
+  }
 }
