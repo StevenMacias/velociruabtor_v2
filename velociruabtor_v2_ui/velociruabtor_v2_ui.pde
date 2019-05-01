@@ -11,7 +11,7 @@ import processing.serial.*;
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "COM7";
+static final String COM_PORT  = "/dev/ttyACM0";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
@@ -130,7 +130,10 @@ void serialEvent(Serial port){
         float xAccel = json.getFloat("xAccel");
         float yAccel = json.getFloat("yAccel");
         float zAccel = json.getFloat("zAccel");
-        // set the ellipse's coordinates to the trimmed strings
+        accel_x_raw_value = str(xAccel);
+        accel_y_raw_value = str(yAccel);
+        accel_z_raw_value = str(zAccel);
+        // set the ellipse's coordinates to the trimmed striqngs
         accel_x_value = int(xAccel*accel_graph_multiplier);
         accel_y_value = int(yAccel*accel_graph_multiplier);
         accel_z_value = int(zAccel*accel_graph_multiplier);
