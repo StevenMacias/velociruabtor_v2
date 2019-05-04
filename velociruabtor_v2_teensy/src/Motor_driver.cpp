@@ -15,6 +15,7 @@ Motor_driver::Motor_driver()
    pinMode(pinBIN1, OUTPUT);
    pinMode(pinBIN2, OUTPUT);
    pinMode(pinPWMB, OUTPUT);
+   pinMode(pinSTBY, OUTPUT);
 }
 void Motor_driver::move(int direction, int speed)
 {
@@ -103,4 +104,50 @@ void Motor_driver::test()
 
   fullStop();
   delay(waitTime);
+}
+
+void Motor_driver::runMotorDriver(int pwmaVal, int aIn1Val, int aIn2Val, int pwmbVal, int bIn1Val, int bIn2Val, int stbyVal)
+{
+  // STBY PIN
+  digitalWrite(pinSTBY, stbyVal);
+  // MOTOR A
+  analogWrite(pinMotorA[0], pwmaVal);
+  _pwmaVal = pwmaVal;
+  digitalWrite(pinMotorA[1], aIn2Val);
+  _aIn2Val = aIn2Val;
+  digitalWrite(pinMotorA[2], aIn1Val);
+  _aIn1Val = aIn1Val;
+  // MOTOR B
+  analogWrite(pinMotorB[0], pwmbVal);
+  _pwmbVal = pwmbVal;
+  digitalWrite(pinMotorB[1], bIn1Val);
+  _bIn1Val = bIn1Val;
+  digitalWrite(pinMotorB[2], bIn2Val);
+  _bIn2Val = bIn2Val;
+}
+
+void Motor_driver::test2()
+{
+  int i;
+  for(i=0; i<255; i++)
+  {
+    runMotorDriver(i, HIGH, LOW, i, HIGH, LOW, HIGH);
+    delay(5);
+  }
+  for(i=0; i<255; i++)
+  {
+    runMotorDriver(i, LOW, HIGH, i, LOW, HIGH, HIGH);
+    delay(5);
+  }
+}
+
+void Motor_driver::getMotorDriverValues(int *values)
+{
+  values[0] = _pwmaVal;
+  values[1] = _aIn2Val;
+  values[2] = _aIn1Val;
+  values[3] = _pwmbVal;
+  values[4] = _bIn1Val;
+  values[5] = _bIn2Val;
+  values[6] = _stbyVal;
 }

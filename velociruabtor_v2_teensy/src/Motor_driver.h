@@ -37,6 +37,15 @@ class Motor_driver
     void enableMotors();
     void disableMotors();
     void test();
+    void test2();
+    void runMotorDriver(int pwmaVal, int aIn1Val, int aIn2Val, int pwmbVal, int bIn1Val, int bIn2Val, int stbyVal);
+    void getMotorDriverValues(int *values);
   private:
-    float _xVal=0;
+    int _pwmaVal=0;
+    int _aIn1Val=0;
+    int _aIn2Val=0;
+    int _pwmbVal=0;
+    int _bIn1Val=0;
+    int _bIn2Val=0;
+    int _stbyVal=0;
 };

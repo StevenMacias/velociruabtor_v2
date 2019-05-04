@@ -24,6 +24,7 @@ Accelerometer accel;
 Motor_driver motor_driver;
 int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
+int motorValues[7];
 
 /**
     Builds a JSON string that contains all the data regarging the line follower.
@@ -48,6 +49,22 @@ void buildAccelJson()
     json["array_values"].add(sensorValues[i]);
   }
   json["array_position"] = position;
+}
+
+/**
+    Builds a JSON string that contains all the data regarging the motor driver.
+    @param none
+    @return void
+*/
+void buildMotorDriverJson()
+{
+  json["PWMA"] = motorValues[0];
+  json["AIN1"] = motorValues[2];
+  json["AIN2"] = motorValues[1];
+  json["PWMB"] = motorValues[3];
+  json["BIN1"] = motorValues[4];
+  json["BIN2"] = motorValues[5];
+  json["STBY"] = motorValues[6];
 }
 
 
@@ -88,17 +105,43 @@ void setup()
 }
 
 /**
+    Test function for the motor driver
+    @param none
+    @return void
+*/
+void testMotorDriver()
+{
+  static int i=0;
+  static bool forward = true;
+
+  if(forward == true)
+  {
+    motor_driver.runMotorDriver(i, LOW, HIGH, i, LOW, HIGH, HIGH);
+  }else{
+    motor_driver.runMotorDriver(i, HIGH, LOW, i, HIGH, LOW, HIGH);
+  }
+  i++;
+  if(i>=255)
+  {
+    forward = !forward;
+    i = 0;
+  }
+}
+
+/**
     Main loop of the project
     @param none
     @return void
 */
 void loop()
 {
+  testMotorDriver();
+  motor_driver.getMotorDriverValues(motorValues);
   accel.getData();
   buildAccelJson();
+  buildMotorDriverJson();
   serializeJson(json, BT_SERIAL);
   serializeJson(json, CABLE_SERIAL);
   BT_SERIAL.print('\n');
   CABLE_SERIAL.print('\n');
-  motor_driver.test();
 }
