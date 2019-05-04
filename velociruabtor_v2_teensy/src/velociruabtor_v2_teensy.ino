@@ -10,6 +10,7 @@
 #include <ArduinoJson.h>
 #include <QTRSensors.h>
 #include "Accelerometer.h"
+#include "Motor_driver.h"
 
 #define BT_SERIAL Serial1
 #define CABLE_SERIAL Serial
@@ -20,6 +21,7 @@
 QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
 Accelerometer accel;
+Motor_driver motor_driver;
 int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
 
@@ -78,6 +80,7 @@ void setup()
   CABLE_SERIAL.begin(CABLE_UART_BAUDRATE);
   // Create Objects
   accel = Accelerometer();
+  motor_driver = Motor_driver();
   // Configure Built In LED
   pinMode(LED_BUILTIN, OUTPUT);
   // Calibrate Sensors Array
@@ -97,4 +100,5 @@ void loop()
   serializeJson(json, CABLE_SERIAL);
   BT_SERIAL.print('\n');
   CABLE_SERIAL.print('\n');
+  motor_driver.test();
 }
