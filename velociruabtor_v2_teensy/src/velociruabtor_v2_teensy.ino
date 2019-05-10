@@ -16,7 +16,7 @@
 #define CABLE_SERIAL Serial
 #define BT_UART_BAUDRATE 38400
 #define CABLE_UART_BAUDRATE 115200
-#define NUM_SENSORS 6
+#define NUM_SENSORS 8
 
 #define Kp 0.1 // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
 #define Kd 4// experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd)
@@ -26,7 +26,7 @@
 #define speedturn 180
 
 
-QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
+QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, A10} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
 Accelerometer accel;
 Motor_driver motor_driver;
