@@ -26,7 +26,7 @@
 #define speedturn 180
 
 
-QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, A10} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
+QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, 12} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
 Accelerometer accel;
 Motor_driver motor_driver;
