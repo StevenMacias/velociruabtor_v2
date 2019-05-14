@@ -29,7 +29,7 @@ public class velociruabtor_v2_ui extends PApplet {
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "COM7";
+static final String COM_PORT  = "COM4";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
@@ -148,7 +148,10 @@ public void serialEvent(Serial port){
         float xAccel = json.getFloat("xAccel");
         float yAccel = json.getFloat("yAccel");
         float zAccel = json.getFloat("zAccel");
-        // set the ellipse's coordinates to the trimmed strings
+        accel_x_raw_value = str(xAccel);
+        accel_y_raw_value = str(yAccel);
+        accel_z_raw_value = str(zAccel);
+        // set the ellipse's coordinates to the trimmed striqngs
         accel_x_value = PApplet.parseInt(xAccel*accel_graph_multiplier);
         accel_y_value = PApplet.parseInt(yAccel*accel_graph_multiplier);
         accel_z_value = PApplet.parseInt(zAccel*accel_graph_multiplier);
