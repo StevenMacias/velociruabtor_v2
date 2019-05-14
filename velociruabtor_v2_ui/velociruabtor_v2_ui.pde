@@ -3,7 +3,7 @@
  velociruabtor_v2_teensy.pde
  Purpose: Develop a user interface for the Velociruabtor v2
  
- @author Steven Macías and Victor Escobedo
+ @author Steven Macías and Víctor Escobedo
  @version 1.0 22/04/2019
  */
 
@@ -11,7 +11,7 @@ import processing.serial.*;
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "/dev/pts/3";
+static final String COM_PORT  = "/dev/pts/4";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
@@ -47,6 +47,16 @@ int PWMB  =  0;
 int BIN1  =  0;
 int BIN2  =  0;
 int STBY  =  0;
+int AOUT1  =  -1;
+int AOUT2  =  -1;
+int BOUT1  =  -1;
+int BOUT2  =  -1;
+
+//TEMPORALES
+int OUT1 = -1;
+int OUT2 = -1;
+//MOTOR WAY
+String texto = "";
 
 static final int motor_driver_distance_between_graphs  = 100;
 
@@ -124,36 +134,111 @@ void drawMotorDriverGraph()
   noFill();  // Set fill to white
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -100);
   fill(255);
-  rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -temp_array_values[1]);
+  rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -map(PWMA, 0, 255, 0, 100));
   
   //FW/BW LEFT
   text("L: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)),  accel_graph_y_pos+accel_graph_size-100-5);
+  fill(0);
+  if(AOUT1 == 0 && AOUT2 == 1){
+	  fill(248,243,43);
+	  texto = "BW";
+  }
+  if(AOUT1 == 1 && AOUT2 == 0){
+	  fill(124,252,0);
+	  texto = "FW";
+  }
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+10, motor_driver_graph_rect_width, 10);
+  fill(0);
+  text(texto, motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+10+10);
+  
+  /* --- BRAKE LEFT --- */
+  if(AOUT1 == 0 && AOUT2 == 0){
+    fill(255,0,0);
+  }else{
+    fill(0);
+  }
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+25, motor_driver_graph_rect_width, 10);
+  fill(0);
+  text("BRAKE", motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+25+10);
    
+  /*-----------------------------------------------------------------------------------------------------------*/
   //MOTOR RIGHT
-  text("R: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)+motor_driver_distance_between_graphs),  accel_graph_y_pos+accel_graph_size-100-5);
   noFill();  // Set fill to white
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -100);
   fill(255);
-  rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -temp_array_values[1]);
+  rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -map(PWMB, 0, 255, 0, 100));
   
   //FW/BW RIGHT
+  text("R: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)+motor_driver_distance_between_graphs),  accel_graph_y_pos+accel_graph_size-100-5);
+  fill(0);
+  if(BOUT1 == 0 && BOUT2 == 1){
+	  fill(248,243,43);
+    texto = "BW";
+  }
+  if(BOUT1 == 1 && BOUT2 == 0){
+	  fill(124,252,0);
+    texto = "FW";
+  }
+  fill(0);
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+10, motor_driver_graph_rect_width, 10);
+  text(texto, motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+10+10);
+  
+  /* --- BRAKE RIGHT --- */
+  if(BOUT1 == 0 && BOUT2 == 0){
+    fill(255,0,0);
+  }else{
+    fill(0);
+  }
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+25, motor_driver_graph_rect_width, 10);
-
-  //stroke(accel_grid_color);
-  //// Motor L Line
-  //line((accel_graph_size+accel_z_graph_x_pos+array_values_x_pos),(0+accel_z_graph_y_pos),(accel_z_graph_x_pos+accel_graph_size+array_values_x_pos),(accel_graph_size+accel_z_graph_y_pos));
-  //// Motor L Ellipse
-  //noStroke();
-  //fill(255,0,0);
-  //ellipse((accel_graph_size+accel_z_graph_x_pos+array_values_x_pos), (temp_array_values[1]+accel_z_graph_y_pos+(accel_graph_half_size/2)), accel_graph_point_size, accel_graph_point_size);
-  //// draw the text
-  //fill(255);
-  //text("MOTOR L: ", (accel_graph_x_pos+10+array_values_x_pos), (accel_graph_size+accel_graph_y_pos-0));
-  //text(temp_array_values[1], (accel_graph_x_pos+25+array_values_x_pos), (accel_graph_size+accel_graph_y_pos-0));
+  fill(0);
+  text("BRAKE", motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+25+10);
 }
+
+
+void logicMotorDriver(int motor,int IN1, int IN2, int PWM, int STBY)
+{
+  if (STBY == 0){
+    print("Motor:"+motor+"-STANDBY"+"\r\n");
+    OUT1  =  -1;
+    OUT2  =  -1;
+  }else{
+    if(IN1 == 0 && IN2 == 0){
+        print("Motor:"+motor+"-STOP"+"\r\n");
+        OUT1  =  -1;
+        OUT2  =  -1;
+    }else{
+       if(IN1 == 1 && IN2 == 1){
+         print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+         OUT1  =  0;
+         OUT2  =  0;
+       }else{
+          if(PWM == 0){
+            print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+            OUT1  =  0;
+            OUT2  =  0;
+          }else{
+            if(IN1 == 1){
+              print("Motor:"+motor+"-CW"+"\r\n");
+              OUT1  =  1;
+              OUT2  =  0;
+            }else{
+              print("Motor:"+motor+"-CCW"+"\r\n");
+              OUT1  =  0;
+              OUT2  =  1;
+            }
+          }
+       }
+    }
+  }
+  if(motor == 1){
+	  AOUT1 = OUT1;
+	  AOUT2 = OUT2;
+  }else{
+	  BOUT1 = OUT1;
+	  BOUT2 = OUT2;
+  }
+}
+
 
 
 /**
@@ -221,22 +306,6 @@ void serialEvent(Serial port) {
         BIN1 = json.getInt("BIN1");
         BIN2 = json.getInt("BIN2");
         STBY = json.getInt("STBY");
-        
-        //println("array_calib_min" + array_calib_min);
-        //println("array_calib_max" + array_calib_max);
-        //println("array_values" + array_values);
-        
-        println("xAccel: " + xAccel);
-        println("yAccel: " + yAccel);
-        println("zAccel: " + zAccel);
-        println("PWMA: " + PWMA);
-        println("AIN1: " + AIN1);
-        println("AIN2: " + AIN2);
-        println("PWMB: " + PWMB);
-        println("BIN1: " + BIN1);
-        println("BIN2: " + BIN2);
-        println("STBY: " + STBY);
-        
       }
     } else
     {
@@ -283,4 +352,6 @@ void draw()
   //   //do stuff 
   //  }
   //}
+  logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
+  logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
 }
