@@ -29,7 +29,7 @@ public class velociruabtor_v2_ui extends PApplet {
 Serial port;
 
 // Configuration constants
-static final String COM_PORT  = "/dev/ttyACM0";
+static final String COM_PORT  = "COM4";
 static final int COM_BAUDRATE = 9600;
 
 // Fonts
