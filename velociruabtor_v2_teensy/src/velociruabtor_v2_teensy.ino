@@ -106,8 +106,7 @@ void setup()
   // Create Objects
   accel = Accelerometer();
   motor_driver = Motor_driver();
-  // Configure Built In LED
-  pinMode(LED_BUILTIN, OUTPUT);
+  motor_driver.enableMotors();
   // Calibrate Sensors Array
   calibrateQtrc();
 }
