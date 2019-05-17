@@ -39,6 +39,7 @@ static final int calib_values_x_pos      = 100;
 static final int calib_values_y_pos      = 25;
 static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
+static final boolean DEBUG_ON            = false;
 
 // Motor driver constants
 int PWMA  =  0;
@@ -82,7 +83,13 @@ JSONArray array_calib_max;
 JSONArray array_values;
 
 
-
+void PRINT(String s)
+{
+  if(DEBUG_ON)
+  {
+      print(s);
+  }
+}
 ///*BUTTON*/
 //float x = 500;
 //float y = 250;
@@ -199,31 +206,31 @@ void drawMotorDriverGraph()
 void logicMotorDriver(int motor,int IN1, int IN2, int PWM, int STBY)
 {
   if (STBY == 0){
-    print("Motor:"+motor+"-STANDBY"+"\r\n");
+    PRINT("Motor:"+motor+"-STANDBY"+"\r\n");
     OUT1  =  -1;
     OUT2  =  -1;
   }else{
     if(IN1 == 0 && IN2 == 0){
-        print("Motor:"+motor+"-STOP"+"\r\n");
+        PRINT("Motor:"+motor+"-STOP"+"\r\n");
         OUT1  =  -1;
         OUT2  =  -1;
     }else{
        if(IN1 == 1 && IN2 == 1){
-         print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+         PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
          OUT1  =  0;
          OUT2  =  0;
        }else{
           if(PWM == 0){
-            print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+            PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
             OUT1  =  0;
             OUT2  =  0;
           }else{
             if(IN1 == 1){
-              print("Motor:"+motor+"-CW"+"\r\n");
+              PRINT("Motor:"+motor+"-CW"+"\r\n");
               OUT1  =  1;
               OUT2  =  0;
             }else{
-              print("Motor:"+motor+"-CCW"+"\r\n");
+              PRINT("Motor:"+motor+"-CCW"+"\r\n");
               OUT1  =  0;
               OUT2  =  1;
             }
