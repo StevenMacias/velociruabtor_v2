@@ -57,6 +57,8 @@ static final int calib_values_x_pos      = 100;
 static final int calib_values_y_pos      = 25;
 static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
+static final int speed_values_x_pos      = 900;
+static final int speed_values_y_pos      = 25;
 static final boolean DEBUG_ON            = false;
 
 // Motor driver constants
@@ -100,6 +102,13 @@ JSONArray array_calib_min;
 JSONArray array_calib_max;
 JSONArray array_values;
 
+// Variables for speed and RPMs
+int rpm_encoder_left;
+int rpm_encoder_right;
+int encoder_elapsed_time;
+float rpm_wheel_left;
+float rpm_wheel_right;
+float average_speed_m_s;
 
 public void PRINT(String s)
 {
@@ -297,6 +306,32 @@ public void drawSensorArrayGraph()
   }
 }
 
+/**
+ Draw graph regarding sensor array
+ @param none
+ @return void
+ */
+public void drawSpeedValuesGraph()
+{
+  textFont(arial_bold);
+  text("Speed values", speed_values_x_pos, speed_values_y_pos);
+
+
+  text("rpm_encoder_left: ", (speed_values_x_pos), (speed_values_y_pos+20));
+  text(rpm_encoder_left, (speed_values_x_pos+150), (speed_values_y_pos+20));
+  text("rpm_encoder_right: ", (speed_values_x_pos), (speed_values_y_pos+40));
+  text(rpm_encoder_right, (speed_values_x_pos+150), (speed_values_y_pos+40));
+  text("encoder_elapsed_time: ", (speed_values_x_pos), (speed_values_y_pos+60));
+  text(encoder_elapsed_time, (speed_values_x_pos+150), (speed_values_y_pos+60));
+  text("rpm_wheel_left: ", (speed_values_x_pos), (speed_values_y_pos+80));
+  text(rpm_wheel_left, (speed_values_x_pos+150), (speed_values_y_pos+80));
+  text("rpm_wheel_right: ", (speed_values_x_pos), (speed_values_y_pos+100));
+  text(rpm_wheel_right, (speed_values_x_pos+150), (speed_values_y_pos+100));
+  text("average_speed_m_s: ", (speed_values_x_pos), (speed_values_y_pos+120));
+  text(average_speed_m_s, (speed_values_x_pos+150), (speed_values_y_pos+120));
+
+}
+
 
 
 /**
@@ -335,6 +370,13 @@ public void serialEvent(Serial port) {
         BIN1 = json.getInt("BIN1");
         BIN2 = json.getInt("BIN2");
         STBY = json.getInt("STBY");
+        // Get the values for the encoders
+        rpm_encoder_left = json.getInt("rpm_encoder_left");
+        rpm_encoder_right = json.getInt("rpm_encoder_right");
+        encoder_elapsed_time = json.getInt("encoder_elapsed_time");
+        rpm_wheel_left = json.getFloat("rpm_wheel_left");
+        rpm_wheel_right = json.getFloat("rpm_wheel_right");
+        average_speed_m_s = json.getFloat("average_speed_m_s");
       }
     } else
     {
@@ -371,6 +413,7 @@ public void draw()
 {
   background(background_color);
   drawAccelerometerGraph();
+  drawSpeedValuesGraph();
   drawSensorArrayGraph();
   drawMotorDriverGraph();
   //circle(x, y, w);

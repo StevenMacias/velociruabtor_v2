@@ -9,9 +9,15 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <QTRSensors.h>
+#include <Encoder.h>
 #include "Accelerometer.h"
 #include "Motor_driver.h"
 
+#define PI 3.1415926535897932384626433832795
+#define WHEEL_GEAR_DIVIDER 10.00
+#define WHEEL_DIAMETER_MILIMETERS 28.00
+#define WHEEL_PERIMETER (PI*WHEEL_DIAMETER_MILIMETERS)
+#define ENCODER_OPTIMIZE_INTERRUPTS
 #define BT_SERIAL Serial1
 #define CABLE_SERIAL Serial
 #define BT_UART_BAUDRATE 38400
@@ -34,6 +40,17 @@ int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
 int motorValues[7];
 int lastError = 0;
+unsigned long start_time = millis();
+unsigned long end_time = millis();
+Encoder encoderLeft(2, 9);
+Encoder encoderRight(10, 11);
+int rpm_encoder_left = 0;
+int rpm_encoder_right = 0;
+float rpm_wheel_left = 0;
+float rpm_wheel_right = 0;
+float average_speed_m_s = 0;
+unsigned long encoder_elapsed_time = 0;
+long encoder_left_count, encoder_right_count;
 /**
     Builds a JSON string that contains all the data regarging the line follower.
     @param none
@@ -73,6 +90,19 @@ void buildMotorDriverJson()
   json["BIN1"] = motorValues[4];
   json["BIN2"] = motorValues[5];
   json["STBY"] = motorValues[6];
+}
+
+void buildEncoderJson()
+{
+  json["rpm_encoder_left"] = rpm_encoder_left;
+  json["rpm_encoder_right"] = rpm_encoder_right;
+  json["encoder_elapsed_time"] = encoder_elapsed_time;
+  json["rpm_wheel_left"] = rpm_wheel_left;
+  json["rpm_wheel_right"] = rpm_wheel_right;
+  json["average_speed_m_s"] = average_speed_m_s;
+  json["encoder_left_count"] = encoder_left_count;
+  json["encoder_right_count"] = encoder_right_count;
+
 }
 
 
@@ -162,6 +192,24 @@ void computePidAndDrive()
   motor_driver.runMotorDriver(rightMotorSpeed, HIGH, LOW, leftMotorSpeed, LOW, HIGH, HIGH);
 }
 
+void calculateRPM()
+{
+  end_time = millis();
+  encoder_elapsed_time = end_time - start_time;
+
+  encoder_left_count = encoderLeft.read();
+  encoder_right_count = encoderRight.read();
+  rpm_encoder_left = 60000*encoder_left_count/encoder_elapsed_time/12;
+  rpm_encoder_right = 60000*encoder_right_count/encoder_elapsed_time/12;
+  rpm_wheel_left = rpm_encoder_left/WHEEL_GEAR_DIVIDER;
+  rpm_wheel_right = rpm_encoder_right/WHEEL_GEAR_DIVIDER;
+
+  average_speed_m_s = (((rpm_wheel_left+rpm_wheel_right)/2)*WHEEL_PERIMETER/1000)/60; //Average wheel speed * perimeter / 60 seconds = meters/second
+  encoderLeft.write(0);
+  encoderRight.write(0);
+  start_time = millis();
+}
+
 /**
     Main loop of the project
     @param none
@@ -169,11 +217,13 @@ void computePidAndDrive()
 */
 void loop()
 {
+  calculateRPM();
   computePidAndDrive();
   motor_driver.getMotorDriverValues(motorValues);
   accel.getData();
   buildAccelJson();
   buildMotorDriverJson();
+  buildEncoderJson();
   serializeJson(json, BT_SERIAL);
   serializeJson(json, CABLE_SERIAL);
   BT_SERIAL.print('\n');
