@@ -110,6 +110,7 @@ void Motor_driver::runMotorDriver(int pwmaVal, int aIn1Val, int aIn2Val, int pwm
 {
   // STBY PIN
   digitalWrite(pinSTBY, stbyVal);
+  _stbyVal = stbyVal;
   // MOTOR A
   analogWrite(pinMotorA[0], pwmaVal);
   _pwmaVal = pwmaVal;

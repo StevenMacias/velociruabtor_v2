@@ -16,16 +16,24 @@
 #define CABLE_SERIAL Serial
 #define BT_UART_BAUDRATE 38400
 #define CABLE_UART_BAUDRATE 115200
-#define NUM_SENSORS 6
+#define NUM_SENSORS 8
 
-QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
+#define Kp 0.1 // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
+#define Kd 4// experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd)
+#define MaxSpeed 255// max speed of the robot
+#define BaseSpeed 255 // this is the speed at which the motors should spin when the robot is perfectly on the line
+#define NUM_SENSORS  8     // number of sensors used
+#define speedturn 180
+
+
+QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, 12} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
 Accelerometer accel;
 Motor_driver motor_driver;
 int position = 0;
 unsigned int sensorValues[NUM_SENSORS];
 int motorValues[7];
-
+int lastError = 0;
 /**
     Builds a JSON string that contains all the data regarging the line follower.
     @param none
@@ -98,8 +106,7 @@ void setup()
   // Create Objects
   accel = Accelerometer();
   motor_driver = Motor_driver();
-  // Configure Built In LED
-  pinMode(LED_BUILTIN, OUTPUT);
+  motor_driver.enableMotors();
   // Calibrate Sensors Array
   calibrateQtrc();
 }
@@ -128,6 +135,33 @@ void testMotorDriver()
   }
 }
 
+void computePidAndDrive()
+{
+  position = qtrrc.readLine(sensorValues); // get calibrated readings along with the line position, refer to the QTR Sensors Arduino Library for more details on line position.
+
+  if(position>6700){
+    motor_driver.runMotorDriver(speedturn, HIGH, LOW, speedturn, LOW, HIGH, HIGH);
+    return;
+  }
+  if(position<300){
+    motor_driver.runMotorDriver(speedturn, LOW, HIGH, speedturn, HIGH, LOW, HIGH);
+    return;
+  }
+
+  int error = position - 3500;
+  int motorSpeed = Kp * error + Kd * (error - lastError);
+  lastError = error;
+
+  int rightMotorSpeed = BaseSpeed + motorSpeed;
+  int leftMotorSpeed = BaseSpeed - motorSpeed;
+
+  if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
+  if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
+  if (rightMotorSpeed < 0)rightMotorSpeed = 0;
+  if (leftMotorSpeed < 0)leftMotorSpeed = 0;
+  motor_driver.runMotorDriver(rightMotorSpeed, HIGH, LOW, leftMotorSpeed, LOW, HIGH, HIGH);
+}
+
 /**
     Main loop of the project
     @param none
@@ -135,7 +169,7 @@ void testMotorDriver()
 */
 void loop()
 {
-  testMotorDriver();
+  computePidAndDrive();
   motor_driver.getMotorDriverValues(motorValues);
   accel.getData();
   buildAccelJson();
