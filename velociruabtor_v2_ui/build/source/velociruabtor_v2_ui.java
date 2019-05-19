@@ -103,12 +103,14 @@ JSONArray array_calib_max;
 JSONArray array_values;
 
 // Variables for speed and RPMs
-int rpm_encoder_left;
-int rpm_encoder_right;
+float rpm_encoder_left;
+float rpm_encoder_right;
 int encoder_elapsed_time;
 float rpm_wheel_left;
 float rpm_wheel_right;
 float average_speed_m_s;
+long encoder_left_count;
+long encoder_right_count;
 
 public void PRINT(String s)
 {
@@ -316,19 +318,26 @@ public void drawSpeedValuesGraph()
   textFont(arial_bold);
   text("Speed values", speed_values_x_pos, speed_values_y_pos);
 
+  text("encoder_elapsed_time: ", (speed_values_x_pos), (speed_values_y_pos+20));
+  text(encoder_elapsed_time, (speed_values_x_pos+150), (speed_values_y_pos+20));
+  text("encoder_left_count: ", (speed_values_x_pos), (speed_values_y_pos+35));
+  text(encoder_left_count, (speed_values_x_pos+150), (speed_values_y_pos+35));
+  text("encoder_right_count: ", (speed_values_x_pos), (speed_values_y_pos+50));
+  text(encoder_right_count, (speed_values_x_pos+150), (speed_values_y_pos+50));
 
-  text("rpm_encoder_left: ", (speed_values_x_pos), (speed_values_y_pos+20));
-  text(rpm_encoder_left, (speed_values_x_pos+150), (speed_values_y_pos+20));
-  text("rpm_encoder_right: ", (speed_values_x_pos), (speed_values_y_pos+40));
-  text(rpm_encoder_right, (speed_values_x_pos+150), (speed_values_y_pos+40));
-  text("encoder_elapsed_time: ", (speed_values_x_pos), (speed_values_y_pos+60));
-  text(encoder_elapsed_time, (speed_values_x_pos+150), (speed_values_y_pos+60));
-  text("rpm_wheel_left: ", (speed_values_x_pos), (speed_values_y_pos+80));
-  text(rpm_wheel_left, (speed_values_x_pos+150), (speed_values_y_pos+80));
-  text("rpm_wheel_right: ", (speed_values_x_pos), (speed_values_y_pos+100));
-  text(rpm_wheel_right, (speed_values_x_pos+150), (speed_values_y_pos+100));
-  text("average_speed_m_s: ", (speed_values_x_pos), (speed_values_y_pos+120));
-  text(average_speed_m_s, (speed_values_x_pos+150), (speed_values_y_pos+120));
+  text("rpm_encoder_left: ", (speed_values_x_pos), (speed_values_y_pos+70));
+  text(rpm_encoder_left, (speed_values_x_pos+150), (speed_values_y_pos+70));
+  text("rpm_encoder_right: ", (speed_values_x_pos), (speed_values_y_pos+85));
+  text(rpm_encoder_right, (speed_values_x_pos+150), (speed_values_y_pos+85));
+
+  text("rpm_wheel_left: ", (speed_values_x_pos), (speed_values_y_pos+105));
+  text(rpm_wheel_left, (speed_values_x_pos+150), (speed_values_y_pos+105));
+  text("rpm_wheel_right: ", (speed_values_x_pos), (speed_values_y_pos+120));
+  text(rpm_wheel_right, (speed_values_x_pos+150), (speed_values_y_pos+120));
+
+  text("average_speed_m_s: ", (speed_values_x_pos), (speed_values_y_pos+140));
+  text(average_speed_m_s, (speed_values_x_pos+150), (speed_values_y_pos+140));
+
 
 }
 
@@ -371,8 +380,10 @@ public void serialEvent(Serial port) {
         BIN2 = json.getInt("BIN2");
         STBY = json.getInt("STBY");
         // Get the values for the encoders
-        rpm_encoder_left = json.getInt("rpm_encoder_left");
-        rpm_encoder_right = json.getInt("rpm_encoder_right");
+        encoder_left_count = json.getLong("encoder_left_count");
+        encoder_right_count = json.getLong("encoder_right_count");
+        rpm_encoder_left = json.getFloat("rpm_encoder_left");
+        rpm_encoder_right = json.getFloat("rpm_encoder_right");
         encoder_elapsed_time = json.getInt("encoder_elapsed_time");
         rpm_wheel_left = json.getFloat("rpm_wheel_left");
         rpm_wheel_right = json.getFloat("rpm_wheel_right");

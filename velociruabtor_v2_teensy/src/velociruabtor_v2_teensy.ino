@@ -43,9 +43,9 @@ int lastError = 0;
 unsigned long start_time = millis();
 unsigned long end_time = millis();
 Encoder encoderLeft(2, 9);
-Encoder encoderRight(10, 11);
-int rpm_encoder_left = 0;
-int rpm_encoder_right = 0;
+Encoder encoderRight(11, 10); // Pins inversed
+float rpm_encoder_left = 0;
+float rpm_encoder_right = 0;
 float rpm_wheel_left = 0;
 float rpm_wheel_right = 0;
 float average_speed_m_s = 0;
@@ -199,8 +199,10 @@ void calculateRPM()
 
   encoder_left_count = encoderLeft.read();
   encoder_right_count = encoderRight.read();
-  rpm_encoder_left = 60000*encoder_left_count/encoder_elapsed_time/12;
-  rpm_encoder_right = 60000*encoder_right_count/encoder_elapsed_time/12;
+  //rpm_encoder_left = 60000.00*encoder_left_count/encoder_elapsed_time/12;
+  //rpm_encoder_right = 60000.00*encoder_right_count/encoder_elapsed_time/12;
+  rpm_encoder_left = ((encoder_left_count/12.00)/encoder_elapsed_time)*60000;
+  rpm_encoder_right = ((encoder_right_count/12.00)/encoder_elapsed_time)*60000;
   rpm_wheel_left = rpm_encoder_left/WHEEL_GEAR_DIVIDER;
   rpm_wheel_right = rpm_encoder_right/WHEEL_GEAR_DIVIDER;
 
@@ -217,6 +219,7 @@ void calculateRPM()
 */
 void loop()
 {
+  motor_driver.disableMotors();
   calculateRPM();
   computePidAndDrive();
   motor_driver.getMotorDriverValues(motorValues);
