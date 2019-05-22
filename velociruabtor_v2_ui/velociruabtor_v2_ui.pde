@@ -1,14 +1,14 @@
 /**
- Velociruabtor V2 User Interface
- velociruabtor_v2_teensy.pde
- Purpose: Develop a user interface for the Velociruabtor v2
+Velociruabtor V2 User Interface
+velociruabtor_v2_teensy.pde
+Purpose: Develop a user interface for the Velociruabtor v2
 
- @author Steven Macías and Víctor Escobedo
- @version 1.0 22/04/2019
- */
+@author Steven Macías and Víctor Escobedo
+@version 1.0 22/04/2019
+*/
 
 import processing.serial.*;
-Serial port;
+Serial serial_port = null;
 
 // Configuration constants
 
@@ -42,6 +42,8 @@ static final int array_values_y_pos      = 25;
 static final int speed_values_x_pos      = 900;
 static final int speed_values_y_pos      = 25;
 static final boolean DEBUG_ON            = false;
+static final int serial_x_pos       = 100;
+static final int serial_y_pos       = 600;
 
 // Motor driver constants
 int PWMA  =  0;
@@ -70,7 +72,15 @@ static final int motor_driver_graph_x_pos       = array_values_x_pos;
 static final int motor_driver_graph_y_pos       = accel_graph_y_pos;
 static final int motor_driver_graph_rect_width  = 40;
 
-
+// serial port buttons
+Button btn_serial_up;              // move up through the serial port list
+Button btn_serial_dn;              // move down through the serial port list
+Button btn_serial_connect;         // connect to the selected serial port
+Button btn_serial_disconnect;      // disconnect from the serial port
+Button btn_serial_list_refresh;    // refresh the serial port list
+String serial_list;                // list of serial ports
+int serial_list_index = 0;         // currently selected serial port
+int num_serial_ports = 0;          // number of serial ports in the list
 
 
 // variables for the coordinates
@@ -80,9 +90,9 @@ int accel_z_value         = 0;
 String accel_x_raw_value  = "0.00";
 String accel_y_raw_value  = "0.00";
 String accel_z_raw_value  = "0.00";
-JSONArray array_calib_min;
-JSONArray array_calib_max;
-JSONArray array_values;
+JSONArray array_calib_min = new JSONArray();
+JSONArray array_calib_max = new JSONArray();
+JSONArray array_values = new JSONArray();
 
 // Variables for speed and RPMs
 float rpm_encoder_left;
@@ -98,7 +108,7 @@ void PRINT(String s)
 {
   if(DEBUG_ON)
   {
-      print(s);
+    print(s);
   }
 }
 ///*BUTTON*/
@@ -108,10 +118,10 @@ void PRINT(String s)
 //float h = 80;
 
 /**
- Draw the graph regarding accelerometer values.
- @param none-
- @return void
- */
+Draw the graph regarding accelerometer values.
+@param none-
+@return void
+*/
 void drawAccelerometerGraph()
 {
   stroke(accel_grid_color);
@@ -159,12 +169,12 @@ void drawMotorDriverGraph()
   text("L: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)),  accel_graph_y_pos+accel_graph_size-100-5);
   fill(0);
   if(AOUT1 == 0 && AOUT2 == 1){
-	  fill(248,243,43);
-	  texto = "BW";
+    fill(248,243,43);
+    texto = "BW";
   }
   if(AOUT1 == 1 && AOUT2 == 0){
-	  fill(124,252,0);
-	  texto = "FW";
+    fill(124,252,0);
+    texto = "FW";
   }
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+10, motor_driver_graph_rect_width, 10);
   fill(0);
@@ -191,11 +201,11 @@ void drawMotorDriverGraph()
   text("R: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)+motor_driver_distance_between_graphs),  accel_graph_y_pos+accel_graph_size-100-5);
   fill(0);
   if(BOUT1 == 0 && BOUT2 == 1){
-	  fill(248,243,43);
+    fill(248,243,43);
     texto = "BW";
   }
   if(BOUT1 == 1 && BOUT2 == 0){
-	  fill(124,252,0);
+    fill(124,252,0);
     texto = "FW";
   }
   fill(0);
@@ -222,49 +232,49 @@ void logicMotorDriver(int motor,int IN1, int IN2, int PWM, int STBY)
     OUT2  =  -1;
   }else{
     if(IN1 == 0 && IN2 == 0){
-        PRINT("Motor:"+motor+"-STOP"+"\r\n");
-        OUT1  =  -1;
-        OUT2  =  -1;
+      PRINT("Motor:"+motor+"-STOP"+"\r\n");
+      OUT1  =  -1;
+      OUT2  =  -1;
     }else{
-       if(IN1 == 1 && IN2 == 1){
-         PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
-         OUT1  =  0;
-         OUT2  =  0;
-       }else{
-          if(PWM == 0){
-            PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
-            OUT1  =  0;
+      if(IN1 == 1 && IN2 == 1){
+        PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+        OUT1  =  0;
+        OUT2  =  0;
+      }else{
+        if(PWM == 0){
+          PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+          OUT1  =  0;
+          OUT2  =  0;
+        }else{
+          if(IN1 == 1){
+            PRINT("Motor:"+motor+"-CW"+"\r\n");
+            OUT1  =  1;
             OUT2  =  0;
           }else{
-            if(IN1 == 1){
-              PRINT("Motor:"+motor+"-CW"+"\r\n");
-              OUT1  =  1;
-              OUT2  =  0;
-            }else{
-              PRINT("Motor:"+motor+"-CCW"+"\r\n");
-              OUT1  =  0;
-              OUT2  =  1;
-            }
+            PRINT("Motor:"+motor+"-CCW"+"\r\n");
+            OUT1  =  0;
+            OUT2  =  1;
           }
-       }
+        }
+      }
     }
   }
   if(motor == 1){
-	  AOUT1 = OUT1;
-	  AOUT2 = OUT2;
+    AOUT1 = OUT1;
+    AOUT2 = OUT2;
   }else{
-	  BOUT1 = OUT1;
-	  BOUT2 = OUT2;
+    BOUT1 = OUT1;
+    BOUT2 = OUT2;
   }
 }
 
 
 
 /**
- Draw graph regarding sensor array
- @param none
- @return void
- */
+Draw graph regarding sensor array
+@param none
+@return void
+*/
 void drawSensorArrayGraph()
 {
   textFont(arial_bold);
@@ -291,10 +301,10 @@ void drawSensorArrayGraph()
 }
 
 /**
- Draw graph regarding sensor array
- @param none
- @return void
- */
+Draw graph regarding sensor array
+@param none
+@return void
+*/
 void drawSpeedValuesGraph()
 {
   textFont(arial_bold);
@@ -326,13 +336,13 @@ void drawSpeedValuesGraph()
 
 
 /**
- Function that is called everytime a JSON string arrives through the UART
- @param none
- @return void
- */
-void serialEvent(Serial port) {
+Function that is called everytime a JSON string arrives through the UART
+@param none
+@return void
+*/
+void serialEvent(Serial serial_port) {
   try {
-    String buffer = port.readStringUntil('\n');
+    String buffer = serial_port.readStringUntil('\n');
     if (buffer != null) {
       JSONObject json = parseJSONObject(buffer);
       if (json == null) {
@@ -382,26 +392,37 @@ void serialEvent(Serial port) {
 }
 
 /**
- Function that initializes the user interface
- @param none
- @return void
- */
+Function that initializes the user interface
+@param none
+@return void
+*/
 void setup() {
   // create window
   size(1280, 720);
   arial_bold = createFont("Arial Bold", 12);
   arial = createFont("Arial", 12);
-  // begin serial connection
-  port = new Serial(this, COM_PORT, COM_BAUDRATE);
-  port.bufferUntil('\n');
-  delay(1000);
+  // create the buttons
+  btn_serial_up = new Button("^", serial_x_pos+140, serial_y_pos+10, 40, 20);
+  btn_serial_dn = new Button("v", serial_x_pos+140, serial_y_pos+50, 40, 20);
+  btn_serial_connect = new Button("Connect", serial_x_pos+300, serial_y_pos+10, 100, 55);
+  btn_serial_disconnect = new Button("Disconnect", serial_x_pos+190, serial_y_pos+45, 100, 25);
+  btn_serial_list_refresh = new Button("Refresh", serial_x_pos+190, serial_y_pos+10, 100, 25);
+
+  // get the list of serial ports on the computer
+  serial_list = Serial.list()[serial_list_index];
+
+  //println(Serial.list());
+  //println(Serial.list().length);
+
+  // get the number of serial ports in the list
+  num_serial_ports = Serial.list().length;
 }
 
 /**
- Main function to create the user interface
- @param none
- @return void
- */
+Main function to create the user interface
+@param none
+@return void
+*/
 void draw()
 {
   background(background_color);
@@ -409,14 +430,102 @@ void draw()
   drawSpeedValuesGraph();
   drawSensorArrayGraph();
   drawMotorDriverGraph();
-  //circle(x, y, w);
-  //if(mousePressed){
-  //  if(mouseX>x && mouseX <x+w && mouseY>y && mouseY <y+h){
-  //   println("Steven esto parece que funciona ninio");
-  //   fill(0);
-  //   //do stuff
-  //  }
-  //}
+  btn_serial_up.Draw();
+  btn_serial_dn.Draw();
+  btn_serial_connect.Draw();
+  btn_serial_disconnect.Draw();
+  btn_serial_list_refresh.Draw();
+  // draw the text box containing the selected serial port
+  DrawTextBox("Select Port", serial_list, serial_x_pos+10, serial_y_pos+10, 120, 60);
   logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
   logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
+}
+
+void mousePressed() {
+  // up button clicked
+  if (btn_serial_up.MouseIsOver()) {
+    if (serial_list_index > 0) {
+      // move one position up in the list of serial ports
+      serial_list_index--;
+      serial_list = Serial.list()[serial_list_index];
+    }
+  }
+  // down button clicked
+  if (btn_serial_dn.MouseIsOver()) {
+    if (serial_list_index < (num_serial_ports - 1)) {
+      // move one position down in the list of serial ports
+      serial_list_index++;
+      serial_list = Serial.list()[serial_list_index];
+    }
+  }
+  // Connect button clicked
+  if (btn_serial_connect.MouseIsOver()) {
+    if (serial_port == null) {
+      // connect to the selected serial port
+      serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+    }
+  }
+  // Disconnect button clicked
+  if (btn_serial_disconnect.MouseIsOver()) {
+    if (serial_port != null) {
+      // disconnect from the serial port
+      serial_port.stop();
+      serial_port = null;
+    }
+  }
+  // Refresh button clicked
+  if (btn_serial_list_refresh.MouseIsOver()) {
+    // get the serial port list and length of the list
+    serial_list = Serial.list()[serial_list_index];
+    num_serial_ports = Serial.list().length;
+  }
+}
+
+// function for drawing a text box with title and contents
+void DrawTextBox(String title, String str, int x, int y, int w, int h)
+{
+  fill(255);
+  rect(x, y, w, h);
+  fill(0);
+  textAlign(LEFT);
+  textSize(14);
+  text(title, x + 10, y + 10, w - 20, 20);
+  textSize(12);
+  text(str, x + 10, y + 40, w - 20, h - 10);
+}
+
+// button class used for all buttons
+class Button {
+  String label;
+  float x;    // top left corner x position
+  float y;    // top left corner y position
+  float w;    // width of button
+  float h;    // height of button
+
+  // constructor
+  Button(String labelB, float xpos, float ypos, float widthB, float heightB) {
+    label = labelB;
+    x = xpos;
+    y = ypos;
+    w = widthB;
+    h = heightB;
+  }
+
+  // draw the button in the window
+  void Draw() {
+    fill(218);
+    stroke(141);
+    rect(x, y, w, h, 10);
+    textAlign(CENTER, CENTER);
+    fill(0);
+    text(label, x + (w / 2), y + (h / 2));
+  }
+
+  // returns true if the mouse cursor is over the button
+  boolean MouseIsOver() {
+    if (mouseX > x && mouseX < (x + w) && mouseY > y && mouseY < (y + h)) {
+      return true;
+    }
+    return false;
+  }
 }
