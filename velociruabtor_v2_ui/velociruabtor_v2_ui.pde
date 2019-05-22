@@ -2,7 +2,7 @@
  Velociruabtor V2 User Interface
  velociruabtor_v2_teensy.pde
  Purpose: Develop a user interface for the Velociruabtor v2
- 
+
  @author Steven Macías and Víctor Escobedo
  @version 1.0 22/04/2019
  */
@@ -39,6 +39,9 @@ static final int calib_values_x_pos      = 100;
 static final int calib_values_y_pos      = 25;
 static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
+static final int speed_values_x_pos      = 900;
+static final int speed_values_y_pos      = 25;
+static final boolean DEBUG_ON            = false;
 
 // Motor driver constants
 int PWMA  =  0;
@@ -81,8 +84,23 @@ JSONArray array_calib_min;
 JSONArray array_calib_max;
 JSONArray array_values;
 
+// Variables for speed and RPMs
+float rpm_encoder_left;
+float rpm_encoder_right;
+int encoder_elapsed_time;
+float rpm_wheel_left;
+float rpm_wheel_right;
+float average_speed_m_s;
+long encoder_left_count;
+long encoder_right_count;
 
-
+void PRINT(String s)
+{
+  if(DEBUG_ON)
+  {
+      print(s);
+  }
+}
 ///*BUTTON*/
 //float x = 500;
 //float y = 250;
@@ -130,13 +148,13 @@ void drawMotorDriverGraph()
     rect((array_values_x_pos+(40*(i))), (array_values_y_pos+35), 30, 5);
     fill(255);
   }
-  
+
   //MOTOR LEFT
   noFill();  // Set fill to white
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -100);
   fill(255);
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -map(PWMA, 0, 255, 0, 100));
-  
+
   //FW/BW LEFT
   text("L: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)),  accel_graph_y_pos+accel_graph_size-100-5);
   fill(0);
@@ -151,7 +169,7 @@ void drawMotorDriverGraph()
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+10, motor_driver_graph_rect_width, 10);
   fill(0);
   text(texto, motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+10+10);
-  
+
   /* --- BRAKE LEFT --- */
   if(AOUT1 == 0 && AOUT2 == 0){
     fill(255,0,0);
@@ -161,14 +179,14 @@ void drawMotorDriverGraph()
   rect(motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+25, motor_driver_graph_rect_width, 10);
   fill(0);
   text("BRAKE", motor_driver_graph_x_pos, accel_graph_size+accel_graph_y_pos+25+10);
-   
+
   /*-----------------------------------------------------------------------------------------------------------*/
   //MOTOR RIGHT
   noFill();  // Set fill to white
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -100);
   fill(255);
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos, motor_driver_graph_rect_width, -map(PWMB, 0, 255, 0, 100));
-  
+
   //FW/BW RIGHT
   text("R: ", (motor_driver_graph_x_pos+(motor_driver_graph_rect_width/2)+motor_driver_distance_between_graphs),  accel_graph_y_pos+accel_graph_size-100-5);
   fill(0);
@@ -183,7 +201,7 @@ void drawMotorDriverGraph()
   fill(0);
   rect(motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+10, motor_driver_graph_rect_width, 10);
   text(texto, motor_driver_graph_x_pos+motor_driver_distance_between_graphs, accel_graph_size+accel_graph_y_pos+10+10);
-  
+
   /* --- BRAKE RIGHT --- */
   if(BOUT1 == 0 && BOUT2 == 0){
     fill(255,0,0);
@@ -199,31 +217,31 @@ void drawMotorDriverGraph()
 void logicMotorDriver(int motor,int IN1, int IN2, int PWM, int STBY)
 {
   if (STBY == 0){
-    print("Motor:"+motor+"-STANDBY"+"\r\n");
+    PRINT("Motor:"+motor+"-STANDBY"+"\r\n");
     OUT1  =  -1;
     OUT2  =  -1;
   }else{
     if(IN1 == 0 && IN2 == 0){
-        print("Motor:"+motor+"-STOP"+"\r\n");
+        PRINT("Motor:"+motor+"-STOP"+"\r\n");
         OUT1  =  -1;
         OUT2  =  -1;
     }else{
        if(IN1 == 1 && IN2 == 1){
-         print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+         PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
          OUT1  =  0;
          OUT2  =  0;
        }else{
           if(PWM == 0){
-            print("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
+            PRINT("Motor:"+motor+"-SHORT BRAKE"+"\r\n");
             OUT1  =  0;
             OUT2  =  0;
           }else{
             if(IN1 == 1){
-              print("Motor:"+motor+"-CW"+"\r\n");
+              PRINT("Motor:"+motor+"-CW"+"\r\n");
               OUT1  =  1;
               OUT2  =  0;
             }else{
-              print("Motor:"+motor+"-CCW"+"\r\n");
+              PRINT("Motor:"+motor+"-CCW"+"\r\n");
               OUT1  =  0;
               OUT2  =  1;
             }
@@ -272,6 +290,39 @@ void drawSensorArrayGraph()
   }
 }
 
+/**
+ Draw graph regarding sensor array
+ @param none
+ @return void
+ */
+void drawSpeedValuesGraph()
+{
+  textFont(arial_bold);
+  text("Speed values", speed_values_x_pos, speed_values_y_pos);
+
+  text("encoder_elapsed_time: ", (speed_values_x_pos), (speed_values_y_pos+20));
+  text(encoder_elapsed_time, (speed_values_x_pos+150), (speed_values_y_pos+20));
+  text("encoder_left_count: ", (speed_values_x_pos), (speed_values_y_pos+35));
+  text(encoder_left_count, (speed_values_x_pos+150), (speed_values_y_pos+35));
+  text("encoder_right_count: ", (speed_values_x_pos), (speed_values_y_pos+50));
+  text(encoder_right_count, (speed_values_x_pos+150), (speed_values_y_pos+50));
+
+  text("rpm_encoder_left: ", (speed_values_x_pos), (speed_values_y_pos+70));
+  text(rpm_encoder_left, (speed_values_x_pos+150), (speed_values_y_pos+70));
+  text("rpm_encoder_right: ", (speed_values_x_pos), (speed_values_y_pos+85));
+  text(rpm_encoder_right, (speed_values_x_pos+150), (speed_values_y_pos+85));
+
+  text("rpm_wheel_left: ", (speed_values_x_pos), (speed_values_y_pos+105));
+  text(rpm_wheel_left, (speed_values_x_pos+150), (speed_values_y_pos+105));
+  text("rpm_wheel_right: ", (speed_values_x_pos), (speed_values_y_pos+120));
+  text(rpm_wheel_right, (speed_values_x_pos+150), (speed_values_y_pos+120));
+
+  text("average_speed_m_s: ", (speed_values_x_pos), (speed_values_y_pos+140));
+  text(average_speed_m_s, (speed_values_x_pos+150), (speed_values_y_pos+140));
+
+
+}
+
 
 
 /**
@@ -310,12 +361,21 @@ void serialEvent(Serial port) {
         BIN1 = json.getInt("BIN1");
         BIN2 = json.getInt("BIN2");
         STBY = json.getInt("STBY");
+        // Get the values for the encoders
+        encoder_left_count = json.getLong("encoder_left_count");
+        encoder_right_count = json.getLong("encoder_right_count");
+        rpm_encoder_left = json.getFloat("rpm_encoder_left");
+        rpm_encoder_right = json.getFloat("rpm_encoder_right");
+        encoder_elapsed_time = json.getInt("encoder_elapsed_time");
+        rpm_wheel_left = json.getFloat("rpm_wheel_left");
+        rpm_wheel_right = json.getFloat("rpm_wheel_right");
+        average_speed_m_s = json.getFloat("average_speed_m_s");
       }
     } else
     {
       println("Buffer is null");
     }
-  } 
+  }
   catch (Exception e) {
     println("Initialization exception");
   }
@@ -346,6 +406,7 @@ void draw()
 {
   background(background_color);
   drawAccelerometerGraph();
+  drawSpeedValuesGraph();
   drawSensorArrayGraph();
   drawMotorDriverGraph();
   //circle(x, y, w);
@@ -353,7 +414,7 @@ void draw()
   //  if(mouseX>x && mouseX <x+w && mouseY>y && mouseY <y+h){
   //   println("Steven esto parece que funciona ninio");
   //   fill(0);
-  //   //do stuff 
+  //   //do stuff
   //  }
   //}
   logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
