@@ -61,11 +61,14 @@ static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
 static final int speed_values_x_pos      = 900;
 static final int speed_values_y_pos      = 25;
+static final int tunning_values_x_pos    = 100;
+static final int tunning_values_y_pos    = 300;
 static final boolean DEBUG_ON            = false;
 static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0f;
 public float numberBoxKd = 2.0f;
+DropdownList d1;
 // Motor driver constants
 int PWMA  =  0;
 int AIN1  =  0;
@@ -441,24 +444,87 @@ public void setup() {
   cp5 = new ControlP5(this);
 
   cp5.addNumberbox("kp")
-     .setPosition(100,200)
-     .setSize(100,14)
-     .setRange(0,200)
-     .setMultiplier(0.01f) // set the sensitifity of the numberbox
-     .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-     .setValue(numberBoxKp)
-     ;
+  .setPosition(tunning_values_x_pos,tunning_values_y_pos)
+  .setSize(100,25)
+  .setRange(0,20)
+  .setMultiplier(0.01f) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKp)
+  .setColorBackground(color(0xff54f367))
+  .setColorForeground(color(0xff02657d))
+  .setColorValue(color(0xff000000))
+  .setColorActive(color(0xffec0808))
+  .setColorCaptionLabel(color(0xffffffff))
+  ;
 
-   cp5.addNumberbox("kd")
-      .setPosition(150,200)
-      .setSize(100,14)
-      .setRange(0,20)
-      .setMultiplier(0.01f) // set the sensitifity of the numberbox
-      .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-      .setValue(numberBoxKd)
-      ;
+  cp5.addNumberbox("kd")
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos)
+  .setSize(100,25)
+  .setRange(0,20)
+  .setMultiplier(0.01f) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKd)
+  .setColorBackground(color(0xff54f367))
+  .setColorForeground(color(0xff02657d))
+  .setColorValue(color(0xff000000))
+  .setColorActive(color(0xffec0808))
+  .setColorCaptionLabel(color(0xffffffff))
+  ;
+
+  // create a DropdownList,
+  d1 = cp5.addDropdownList("serialPortList")
+  .setPosition(tunning_values_x_pos, tunning_values_y_pos+50)
+  ;
+  customize(d1);
+}
+
+public void controlEvent(ControlEvent theEvent) {
+  // DropdownList is of type ControlGroup.
+  // A controlEvent will be triggered from inside the ControlGroup class.
+  // therefore you need to check the originator of the Event with
+  // if (theEvent.isGroup())
+  // to avoid an error message thrown by controlP5.
+
+  if (theEvent.isGroup()) {
+    // check if the Event was triggered from a ControlGroup
+    println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
+  }
+  else if (theEvent.isController()) {
+    println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
+    if (theEvent.isFrom(cp5.getController("serialPortList"))) {
+      println("this event was triggered by Controller serialPortList");
+      if (serial_port == null) {
+        // connect to the selected serial port
+        try{
+          serial_port = new Serial(this, Serial.list()[PApplet.parseInt(theEvent.getController().getValue())], 9600);
+          serial_port.bufferUntil('\n');
+        }
+        catch (Exception e) {
+          println(e);
+        }
+        print("Connect");
+      }
+    }
+  }
+}
+
+public void customize(DropdownList ddl) {
+  // a convenience function to customize a DropdownList
+  ddl.setBackgroundColor(color(190));
+  ddl.setItemHeight(20);
+  ddl.setBarHeight(15);
+  ddl.getCaptionLabel().set("Serial Ports");
 
 
+  num_serial_ports = Serial.list().length;
+  println("num_serial_ports: "+num_serial_ports);
+  for (int i=0;i<num_serial_ports;i++) {
+    println(Serial.list()[i]);
+    ddl.addItem(Serial.list()[i], i);
+  }
+  //ddl.scroll(0);
+  ddl.setColorBackground(color(60));
+  ddl.setColorActive(color(255, 128));
 }
 
 public void kp(float kp_value) {
@@ -519,6 +585,7 @@ public void mousePressed() {
       // connect to the selected serial port
       try{
         serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+        serial_port.bufferUntil('\n');
       }
       catch (Exception e) {
         println(e);

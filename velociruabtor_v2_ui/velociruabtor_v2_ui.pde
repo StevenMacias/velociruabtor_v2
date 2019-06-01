@@ -6,7 +6,8 @@ Purpose: Develop a user interface for the Velociruabtor v2
 @author Steven Macías and Víctor Escobedo
 @version 1.0 22/04/2019
 */
-
+import controlP5.*;
+ControlP5 cp5;
 import processing.serial.*;
 Serial serial_port = null;
 
@@ -41,10 +42,14 @@ static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
 static final int speed_values_x_pos      = 900;
 static final int speed_values_y_pos      = 25;
+static final int tunning_values_x_pos    = 100;
+static final int tunning_values_y_pos    = 300;
 static final boolean DEBUG_ON            = false;
 static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
-
+public float numberBoxKp = 1.0;
+public float numberBoxKd = 2.0;
+DropdownList d1;
 // Motor driver constants
 int PWMA  =  0;
 int AIN1  =  0;
@@ -416,6 +421,101 @@ void setup() {
 
   // get the number of serial ports in the list
   num_serial_ports = Serial.list().length;
+
+  cp5 = new ControlP5(this);
+
+  cp5.addNumberbox("kp")
+  .setPosition(tunning_values_x_pos,tunning_values_y_pos)
+  .setSize(100,25)
+  .setRange(0,20)
+  .setMultiplier(0.01) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKp)
+  .setColorBackground(color(#54f367))
+  .setColorForeground(color(#02657d))
+  .setColorValue(color(#000000))
+  .setColorActive(color(#ec0808))
+  .setColorCaptionLabel(color(#ffffff))
+  ;
+
+  cp5.addNumberbox("kd")
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos)
+  .setSize(100,25)
+  .setRange(0,20)
+  .setMultiplier(0.01) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKd)
+  .setColorBackground(color(#54f367))
+  .setColorForeground(color(#02657d))
+  .setColorValue(color(#000000))
+  .setColorActive(color(#ec0808))
+  .setColorCaptionLabel(color(#ffffff))
+  ;
+
+  // create a DropdownList,
+  d1 = cp5.addDropdownList("serialPortList")
+  .setPosition(tunning_values_x_pos, tunning_values_y_pos+50)
+  ;
+  customize(d1);
+}
+
+void controlEvent(ControlEvent theEvent) {
+  // DropdownList is of type ControlGroup.
+  // A controlEvent will be triggered from inside the ControlGroup class.
+  // therefore you need to check the originator of the Event with
+  // if (theEvent.isGroup())
+  // to avoid an error message thrown by controlP5.
+
+  if (theEvent.isGroup()) {
+    // check if the Event was triggered from a ControlGroup
+    println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
+  }
+  else if (theEvent.isController()) {
+    println("event from controller : "+theEvent.getController().getValue()+" from "+theEvent.getController());
+    if (theEvent.isFrom(cp5.getController("serialPortList"))) {
+      println("this event was triggered by Controller serialPortList");
+      if (serial_port == null) {
+        // connect to the selected serial port
+        try{
+          serial_port = new Serial(this, Serial.list()[int(theEvent.getController().getValue())], 9600);
+          serial_port.bufferUntil('\n');
+        }
+        catch (Exception e) {
+          println(e);
+        }
+        print("Connect");
+      }
+    }
+  }
+}
+
+void customize(DropdownList ddl) {
+  // a convenience function to customize a DropdownList
+  ddl.setBackgroundColor(color(190));
+  ddl.setItemHeight(20);
+  ddl.setBarHeight(15);
+  ddl.getCaptionLabel().set("Serial Ports");
+
+
+  num_serial_ports = Serial.list().length;
+  println("num_serial_ports: "+num_serial_ports);
+  for (int i=0;i<num_serial_ports;i++) {
+    println(Serial.list()[i]);
+    ddl.addItem(Serial.list()[i], i);
+  }
+  //ddl.scroll(0);
+  ddl.setColorBackground(color(60));
+  ddl.setColorActive(color(255, 128));
+}
+
+void kp(float kp_value) {
+  numberBoxKp = kp_value;
+  println("kp_value:"+numberBoxKp);
+}
+
+void kd(float kd_value) {
+  numberBoxKd = kd_value;
+  println("kd_value:"+numberBoxKd);
 }
 
 /**
@@ -449,6 +549,7 @@ void mousePressed() {
       serial_list_index--;
       serial_list = Serial.list()[serial_list_index];
     }
+    print("Up");
   }
   // down button clicked
   if (btn_serial_dn.MouseIsOver()) {
@@ -457,12 +558,20 @@ void mousePressed() {
       serial_list_index++;
       serial_list = Serial.list()[serial_list_index];
     }
+    print("Down");
   }
   // Connect button clicked
   if (btn_serial_connect.MouseIsOver()) {
     if (serial_port == null) {
       // connect to the selected serial port
-      serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+      try{
+        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+        serial_port.bufferUntil('\n');
+      }
+      catch (Exception e) {
+        println(e);
+      }
+      print("Connect");
     }
   }
   // Disconnect button clicked
@@ -471,6 +580,7 @@ void mousePressed() {
       // disconnect from the serial port
       serial_port.stop();
       serial_port = null;
+      print("Disconnect");
     }
   }
   // Refresh button clicked
