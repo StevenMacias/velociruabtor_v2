@@ -33,7 +33,7 @@ Serial serial_port = null;
 // Configuration constants
 
 static final String COM_PORT  = "COM4";
-static final int COM_BAUDRATE = 9600;
+static final int COM_BAUDRATE = 115200;
 
 // Fonts
 PFont arial_bold;
@@ -69,6 +69,8 @@ static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0f;
 public float numberBoxKd = 2.0f;
 DropdownList d1;
+JSONObject tx_json;
+
 // Motor driver constants
 int PWMA  =  0;
 int AIN1  =  0;
@@ -425,6 +427,7 @@ public void setup() {
   
   arial_bold = createFont("Arial Bold", 12);
   arial = createFont("Arial", 12);
+  tx_json = new JSONObject();
 
   // get the number of serial ports in the list
   num_serial_ports = Serial.list().length;
@@ -501,7 +504,7 @@ public void connect(boolean theFlag) {
     if (serial_port == null) {
       // connect to the selected serial port
       try{
-        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+        serial_port = new Serial(this, Serial.list()[serial_list_index], COM_BAUDRATE);
         serial_port.bufferUntil('\n');
       }
       catch (Exception e) {
@@ -510,6 +513,7 @@ public void connect(boolean theFlag) {
       cp5.getController("connect").setColorActive(color(0xff54f367));
       cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
       print("Connect");
+
     }
   } else {
     if (serial_port != null) {
@@ -519,6 +523,7 @@ public void connect(boolean theFlag) {
       cp5.getController("connect").setColorActive(color(0xfff35454));
       cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
       print("Disconnect");
+
     }
   }
   println("a toggle event.");
@@ -526,28 +531,19 @@ public void connect(boolean theFlag) {
 
 public void enableMotors(boolean theFlag) {
   if(theFlag==true) {
-    if (serial_port == null) {
-      // connect to the selected serial port
-      try{
-        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
-        serial_port.bufferUntil('\n');
-      }
-      catch (Exception e) {
-        println(e);
-      }
-      print("Connect");
       cp5.getController("enableMotors").setColorActive(color(0xff54f367));
       cp5.getController("enableMotors").setColorBackground(color(0xff5c5c5c));
-    }
+      tx_json.setInt("enable", 1);
   } else {
-    if (serial_port != null) {
       // disconnect from the serial port
-      serial_port.stop();
-      serial_port = null;
-      print("Disconnect");
       cp5.getController("enableMotors").setColorActive(color(0xfff35454));
       cp5.getController("enableMotors").setColorBackground(color(0xff5c5c5c));
-    }
+      tx_json.setInt("enable", 0);
+  }
+  if(serial_port != null)
+  {
+      // Why is this so slow? 2.5 seconds. 
+      serial_port.write(tx_json.toString());
   }
   println("a toggle event.");
 }
@@ -572,7 +568,7 @@ public void controlEvent(ControlEvent theEvent) {
         try{
           //serial_port = new Serial(this, Serial.list()[int(theEvent.getController().getValue())], 9600);
           serial_list_index = PApplet.parseInt(theEvent.getController().getValue());
-          serial_port.bufferUntil('\n');
+          //serial_port.bufferUntil('\n');
         }
         catch (Exception e) {
           println(e);
@@ -622,7 +618,7 @@ public void draw()
 }
   public void settings() {  size(1280, 720); }
   static public void main(String[] passedArgs) {
-    String[] appletArgs = new String[] { "--present", "--window-color=#666666", "--stop-color=#cccccc", "velociruabtor_v2_ui" };
+    String[] appletArgs = new String[] { "velociruabtor_v2_ui" };
     if (passedArgs != null) {
       PApplet.main(concat(appletArgs, passedArgs));
     } else {

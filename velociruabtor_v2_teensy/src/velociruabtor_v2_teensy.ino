@@ -1,10 +1,10 @@
 /**
-    Velociruabtor V2
-    velociruabtor_v2_teensy.ino
-    Purpose: Develop a line follower using Teensy 3.2
+Velociruabtor V2
+velociruabtor_v2_teensy.ino
+Purpose: Develop a line follower using Teensy 3.2
 
-    @author Steven Macías and Victor Escobedo
-    @version 1.0 22/04/2019
+@author Steven Macías and Victor Escobedo
+@version 1.0 22/04/2019
 */
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -34,6 +34,7 @@
 
 QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, 12} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
+StaticJsonDocument<128> rx_json;
 Accelerometer accel;
 Motor_driver motor_driver;
 int position = 0;
@@ -51,10 +52,12 @@ float rpm_wheel_right = 0;
 float average_speed_m_s = 0;
 unsigned long encoder_elapsed_time = 0;
 long encoder_left_count, encoder_right_count;
+char serial_data[128] = "";
+int enable = 0;
 /**
-    Builds a JSON string that contains all the data regarging the line follower.
-    @param none
-    @return void
+Builds a JSON string that contains all the data regarging the line follower.
+@param none
+@return void
 */
 void buildAccelJson()
 {
@@ -77,9 +80,9 @@ void buildAccelJson()
 }
 
 /**
-    Builds a JSON string that contains all the data regarging the motor driver.
-    @param none
-    @return void
+Builds a JSON string that contains all the data regarging the motor driver.
+@param none
+@return void
 */
 void buildMotorDriverJson()
 {
@@ -107,9 +110,9 @@ void buildEncoderJson()
 
 
 /**
-    Calibrates the QTR-RC Sensor array
-    @param none
-    @return void
+Calibrates the QTR-RC Sensor array
+@param none
+@return void
 */
 void calibrateQtrc()
 {
@@ -122,9 +125,9 @@ void calibrateQtrc()
 }
 
 /**
-    Function that initializes the system
-    @param none
-    @return void
+Function that initializes the system
+@param none
+@return void
 */
 void setup()
 {
@@ -136,15 +139,15 @@ void setup()
   // Create Objects
   accel = Accelerometer();
   motor_driver = Motor_driver();
-  motor_driver.enableMotors();
+  //motor_driver.enableMotors();
   // Calibrate Sensors Array
   calibrateQtrc();
 }
 
 /**
-    Test function for the motor driver
-    @param none
-    @return void
+Test function for the motor driver
+@param none
+@return void
 */
 void testMotorDriver()
 {
@@ -170,11 +173,11 @@ void computePidAndDrive()
   position = qtrrc.readLine(sensorValues); // get calibrated readings along with the line position, refer to the QTR Sensors Arduino Library for more details on line position.
 
   if(position>6700){
-    motor_driver.runMotorDriver(speedturn, HIGH, LOW, speedturn, LOW, HIGH, HIGH);
+    motor_driver.runMotorDriver(speedturn, HIGH, LOW, speedturn, LOW, HIGH, enable);
     return;
   }
   if(position<300){
-    motor_driver.runMotorDriver(speedturn, LOW, HIGH, speedturn, HIGH, LOW, HIGH);
+    motor_driver.runMotorDriver(speedturn, LOW, HIGH, speedturn, HIGH, LOW, enable);
     return;
   }
 
@@ -189,7 +192,7 @@ void computePidAndDrive()
   if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
   if (rightMotorSpeed < 0)rightMotorSpeed = 0;
   if (leftMotorSpeed < 0)leftMotorSpeed = 0;
-  motor_driver.runMotorDriver(rightMotorSpeed, HIGH, LOW, leftMotorSpeed, LOW, HIGH, HIGH);
+  motor_driver.runMotorDriver(rightMotorSpeed, HIGH, LOW, leftMotorSpeed, LOW, HIGH, enable);
 }
 
 void calculateRPM()
@@ -213,13 +216,12 @@ void calculateRPM()
 }
 
 /**
-    Main loop of the project
-    @param none
-    @return void
+Main loop of the project
+@param none
+@return void
 */
 void loop()
 {
-  motor_driver.disableMotors();
   calculateRPM();
   computePidAndDrive();
   motor_driver.getMotorDriverValues(motorValues);
@@ -227,8 +229,20 @@ void loop()
   buildAccelJson();
   buildMotorDriverJson();
   buildEncoderJson();
-  serializeJson(json, BT_SERIAL);
-  serializeJson(json, CABLE_SERIAL);
-  BT_SERIAL.print('\n');
-  CABLE_SERIAL.print('\n');
+  // avoid uart saturation
+
+    //serializeJson(json, BT_SERIAL);
+    serializeJson(json, CABLE_SERIAL);
+    //BT_SERIAL.print('\n');
+    CABLE_SERIAL.print('\n');
+
+
+  if(CABLE_SERIAL.available() > 0) {
+    //a= Serial.readString();// read the incoming data as string
+    CABLE_SERIAL.readBytesUntil('\n', serial_data, 128);
+    rx_json.clear();
+    deserializeJson(rx_json, serial_data);
+    enable = rx_json["enable"];
+  }
+  //delay(22);
 }
