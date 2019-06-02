@@ -138,7 +138,7 @@ void drawAccelerometerGraph()
   line((accel_graph_size+accel_z_graph_x_pos), (0+accel_z_graph_y_pos), (accel_z_graph_x_pos+accel_graph_size), (accel_graph_size+accel_z_graph_y_pos));
   // draw the ellipse
   noStroke();
-  fill(255, 0, 0);
+  fill(color(#54f367));
   ellipse((accel_graph_half_size+accel_y_value+accel_graph_x_pos), (accel_graph_half_size+accel_x_value+accel_graph_y_pos), accel_graph_point_size, accel_graph_point_size);
   ellipse((accel_graph_size+accel_z_graph_x_pos), (accel_z_value+accel_z_graph_y_pos+(accel_graph_half_size/2)), accel_graph_point_size, accel_graph_point_size);
   // draw the text
@@ -406,18 +406,6 @@ void setup() {
   size(1280, 720);
   arial_bold = createFont("Arial Bold", 12);
   arial = createFont("Arial", 12);
-  // create the buttons
-  btn_serial_up = new Button("^", serial_x_pos+140, serial_y_pos+10, 40, 20);
-  btn_serial_dn = new Button("v", serial_x_pos+140, serial_y_pos+50, 40, 20);
-  btn_serial_connect = new Button("Connect", serial_x_pos+300, serial_y_pos+10, 100, 55);
-  btn_serial_disconnect = new Button("Disconnect", serial_x_pos+190, serial_y_pos+45, 100, 25);
-  btn_serial_list_refresh = new Button("Refresh", serial_x_pos+190, serial_y_pos+10, 100, 25);
-
-  // get the list of serial ports on the computer
-  serial_list = Serial.list()[serial_list_index];
-
-  //println(Serial.list());
-  //println(Serial.list().length);
 
   // get the number of serial ports in the list
   num_serial_ports = Serial.list().length;
@@ -426,7 +414,7 @@ void setup() {
 
   cp5.addNumberbox("kp")
   .setPosition(tunning_values_x_pos,tunning_values_y_pos)
-  .setSize(100,25)
+  .setSize(110,25)
   .setRange(0,20)
   .setMultiplier(0.01) // set the sensitifity of the numberbox
   .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
@@ -440,7 +428,7 @@ void setup() {
 
   cp5.addNumberbox("kd")
   .setPosition(tunning_values_x_pos+150,tunning_values_y_pos)
-  .setSize(100,25)
+  .setSize(110,25)
   .setRange(0,20)
   .setMultiplier(0.01) // set the sensitifity of the numberbox
   .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
@@ -455,8 +443,94 @@ void setup() {
   // create a DropdownList,
   d1 = cp5.addDropdownList("serialPortList")
   .setPosition(tunning_values_x_pos, tunning_values_y_pos+50)
+  .setOpen(false)
+  .setBackgroundColor(color(#216329))
+  .setColorActive(color(#54f367))
+  .setColorBackground(color(#54f367))
+  .setColorCaptionLabel(color(#216329))
+  .setColorForeground(color(#216329))
+  .setColorLabel(color(#000000))
+  .setColorValue(color(#216329))
+  .setColorValueLabel(color(#000000))
+  .setItemHeight(25)
+  .setBarHeight(25)
+  .setWidth(110);
   ;
   customize(d1);
+
+  // create a toggle and change the default look to a (on/off) switch look
+  cp5.addToggle("connect")
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos+50)
+  .setSize(50,20)
+  .setValue(false)
+  .setMode(ControlP5.SWITCH)
+  .setColorBackground(color(#5c5c5c))
+  .setColorActive(color(#f35454))
+  ;
+  cp5.addToggle("enableMotors")
+  .setPosition(tunning_values_x_pos+210,tunning_values_y_pos+50)
+  .setSize(50,20)
+  .setValue(false)
+  .setMode(ControlP5.SWITCH)
+  .setColorBackground(color(#5c5c5c))
+  .setColorActive(color(#f35454))
+  ;
+}
+
+void connect(boolean theFlag) {
+  if(theFlag==true) {
+    if (serial_port == null) {
+      // connect to the selected serial port
+      try{
+        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+        serial_port.bufferUntil('\n');
+      }
+      catch (Exception e) {
+        println(e);
+      }
+      cp5.getController("connect").setColorActive(color(#54f367));
+      cp5.getController("connect").setColorBackground(color(#5c5c5c));
+      print("Connect");
+    }
+  } else {
+    if (serial_port != null) {
+      // disconnect from the serial port
+      serial_port.stop();
+      serial_port = null;
+      cp5.getController("connect").setColorActive(color(#f35454));
+      cp5.getController("connect").setColorBackground(color(#5c5c5c));
+      print("Disconnect");
+    }
+  }
+  println("a toggle event.");
+}
+
+void enableMotors(boolean theFlag) {
+  if(theFlag==true) {
+    if (serial_port == null) {
+      // connect to the selected serial port
+      try{
+        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+        serial_port.bufferUntil('\n');
+      }
+      catch (Exception e) {
+        println(e);
+      }
+      print("Connect");
+      cp5.getController("enableMotors").setColorActive(color(#54f367));
+      cp5.getController("enableMotors").setColorBackground(color(#5c5c5c));
+    }
+  } else {
+    if (serial_port != null) {
+      // disconnect from the serial port
+      serial_port.stop();
+      serial_port = null;
+      print("Disconnect");
+      cp5.getController("enableMotors").setColorActive(color(#f35454));
+      cp5.getController("enableMotors").setColorBackground(color(#5c5c5c));
+    }
+  }
+  println("a toggle event.");
 }
 
 void controlEvent(ControlEvent theEvent) {
@@ -477,7 +551,8 @@ void controlEvent(ControlEvent theEvent) {
       if (serial_port == null) {
         // connect to the selected serial port
         try{
-          serial_port = new Serial(this, Serial.list()[int(theEvent.getController().getValue())], 9600);
+          //serial_port = new Serial(this, Serial.list()[int(theEvent.getController().getValue())], 9600);
+          serial_list_index = int(theEvent.getController().getValue());
           serial_port.bufferUntil('\n');
         }
         catch (Exception e) {
@@ -491,21 +566,13 @@ void controlEvent(ControlEvent theEvent) {
 
 void customize(DropdownList ddl) {
   // a convenience function to customize a DropdownList
-  ddl.setBackgroundColor(color(190));
-  ddl.setItemHeight(20);
-  ddl.setBarHeight(15);
   ddl.getCaptionLabel().set("Serial Ports");
-
-
   num_serial_ports = Serial.list().length;
   println("num_serial_ports: "+num_serial_ports);
   for (int i=0;i<num_serial_ports;i++) {
     println(Serial.list()[i]);
     ddl.addItem(Serial.list()[i], i);
   }
-  //ddl.scroll(0);
-  ddl.setColorBackground(color(60));
-  ddl.setColorActive(color(255, 128));
 }
 
 void kp(float kp_value) {
@@ -530,112 +597,7 @@ void draw()
   drawSpeedValuesGraph();
   drawSensorArrayGraph();
   drawMotorDriverGraph();
-  btn_serial_up.Draw();
-  btn_serial_dn.Draw();
-  btn_serial_connect.Draw();
-  btn_serial_disconnect.Draw();
-  btn_serial_list_refresh.Draw();
-  // draw the text box containing the selected serial port
-  DrawTextBox("Select Port", serial_list, serial_x_pos+10, serial_y_pos+10, 120, 60);
+
   logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
   logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
-}
-
-void mousePressed() {
-  // up button clicked
-  if (btn_serial_up.MouseIsOver()) {
-    if (serial_list_index > 0) {
-      // move one position up in the list of serial ports
-      serial_list_index--;
-      serial_list = Serial.list()[serial_list_index];
-    }
-    print("Up");
-  }
-  // down button clicked
-  if (btn_serial_dn.MouseIsOver()) {
-    if (serial_list_index < (num_serial_ports - 1)) {
-      // move one position down in the list of serial ports
-      serial_list_index++;
-      serial_list = Serial.list()[serial_list_index];
-    }
-    print("Down");
-  }
-  // Connect button clicked
-  if (btn_serial_connect.MouseIsOver()) {
-    if (serial_port == null) {
-      // connect to the selected serial port
-      try{
-        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
-        serial_port.bufferUntil('\n');
-      }
-      catch (Exception e) {
-        println(e);
-      }
-      print("Connect");
-    }
-  }
-  // Disconnect button clicked
-  if (btn_serial_disconnect.MouseIsOver()) {
-    if (serial_port != null) {
-      // disconnect from the serial port
-      serial_port.stop();
-      serial_port = null;
-      print("Disconnect");
-    }
-  }
-  // Refresh button clicked
-  if (btn_serial_list_refresh.MouseIsOver()) {
-    // get the serial port list and length of the list
-    serial_list = Serial.list()[serial_list_index];
-    num_serial_ports = Serial.list().length;
-  }
-}
-
-// function for drawing a text box with title and contents
-void DrawTextBox(String title, String str, int x, int y, int w, int h)
-{
-  fill(255);
-  rect(x, y, w, h);
-  fill(0);
-  textAlign(LEFT);
-  textSize(14);
-  text(title, x + 10, y + 10, w - 20, 20);
-  textSize(12);
-  text(str, x + 10, y + 40, w - 20, h - 10);
-}
-
-// button class used for all buttons
-class Button {
-  String label;
-  float x;    // top left corner x position
-  float y;    // top left corner y position
-  float w;    // width of button
-  float h;    // height of button
-
-  // constructor
-  Button(String labelB, float xpos, float ypos, float widthB, float heightB) {
-    label = labelB;
-    x = xpos;
-    y = ypos;
-    w = widthB;
-    h = heightB;
-  }
-
-  // draw the button in the window
-  void Draw() {
-    fill(218);
-    stroke(141);
-    rect(x, y, w, h, 10);
-    textAlign(CENTER, CENTER);
-    fill(0);
-    text(label, x + (w / 2), y + (h / 2));
-  }
-
-  // returns true if the mouse cursor is over the button
-  boolean MouseIsOver() {
-    if (mouseX > x && mouseX < (x + w) && mouseY > y && mouseY < (y + h)) {
-      return true;
-    }
-    return false;
-  }
 }
