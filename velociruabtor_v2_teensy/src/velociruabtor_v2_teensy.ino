@@ -34,7 +34,7 @@ Purpose: Develop a line follower using Teensy 3.2
 
 QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, 12} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
-StaticJsonDocument<128> rx_json;
+StaticJsonDocument<512> rx_json;
 Accelerometer accel;
 Motor_driver motor_driver;
 int position = 0;
@@ -54,6 +54,9 @@ unsigned long encoder_elapsed_time = 0;
 long encoder_left_count, encoder_right_count;
 char serial_data[128] = "";
 int enable = 0;
+float kp = 1;
+float kd = 1;
+int baseSpeed = 0;
 /**
 Builds a JSON string that contains all the data regarging the line follower.
 @param none
@@ -182,11 +185,11 @@ void computePidAndDrive()
   }
 
   int error = position - 3500;
-  int motorSpeed = Kp * error + Kd * (error - lastError);
+  int motorSpeed = kp * error + kd * (error - lastError);
   lastError = error;
 
-  int rightMotorSpeed = BaseSpeed + motorSpeed;
-  int leftMotorSpeed = BaseSpeed - motorSpeed;
+  int rightMotorSpeed = baseSpeed + motorSpeed;
+  int leftMotorSpeed = baseSpeed - motorSpeed;
 
   if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
   if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
@@ -231,9 +234,9 @@ void loop()
   buildEncoderJson();
   // avoid uart saturation
 
-    //serializeJson(json, BT_SERIAL);
+    serializeJson(json, BT_SERIAL);
     serializeJson(json, CABLE_SERIAL);
-    //BT_SERIAL.print('\n');
+    BT_SERIAL.print('\n');
     CABLE_SERIAL.print('\n');
 
 
@@ -243,6 +246,19 @@ void loop()
     rx_json.clear();
     deserializeJson(rx_json, serial_data);
     enable = rx_json["enable"];
+    kp = rx_json["kp"];
+    kd = rx_json["kd"];
+    baseSpeed = rx_json["baseSpeed"];
+  }
+  if(BT_SERIAL.available() > 0) {
+    //a= Serial.readString();// read the incoming data as string
+    BT_SERIAL.readBytesUntil('\n', serial_data, 128);
+    rx_json.clear();
+    deserializeJson(rx_json, serial_data);
+    enable = rx_json["enable"];
+    kp = rx_json["kp"];
+    kd = rx_json["kd"];
+    baseSpeed = rx_json["baseSpeed"];
   }
   //delay(22);
 }
