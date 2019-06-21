@@ -33,7 +33,7 @@ Serial serial_port = null;
 // Configuration constants
 
 static final String COM_PORT  = "COM4";
-static final int COM_BAUDRATE = 9600;
+static final int COM_BAUDRATE = 38400;
 
 // Fonts
 PFont arial_bold;
@@ -61,11 +61,20 @@ static final int array_values_x_pos      = 500;
 static final int array_values_y_pos      = 25;
 static final int speed_values_x_pos      = 900;
 static final int speed_values_y_pos      = 25;
+static final int tunning_values_x_pos    = 100;
+static final int tunning_values_y_pos    = 300;
 static final boolean DEBUG_ON            = false;
 static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0f;
 public float numberBoxKd = 2.0f;
+DropdownList d1;
+JSONObject tx_json;
+Textarea myTextarea;
+Println console;
+int baseSpeedValue = 100;
+Knob baseSpeedKnob;
+
 // Motor driver constants
 int PWMA  =  0;
 int AIN1  =  0;
@@ -129,7 +138,7 @@ public void PRINT(String s)
 {
   if(DEBUG_ON)
   {
-    print(s);
+    println(s);
   }
 }
 ///*BUTTON*/
@@ -154,7 +163,7 @@ public void drawAccelerometerGraph()
   line((accel_graph_size+accel_z_graph_x_pos), (0+accel_z_graph_y_pos), (accel_z_graph_x_pos+accel_graph_size), (accel_graph_size+accel_z_graph_y_pos));
   // draw the ellipse
   noStroke();
-  fill(255, 0, 0);
+  fill(color(0xff54f367));
   ellipse((accel_graph_half_size+accel_y_value+accel_graph_x_pos), (accel_graph_half_size+accel_x_value+accel_graph_y_pos), accel_graph_point_size, accel_graph_point_size);
   ellipse((accel_graph_size+accel_z_graph_x_pos), (accel_z_value+accel_z_graph_y_pos+(accel_graph_half_size/2)), accel_graph_point_size, accel_graph_point_size);
   // draw the text
@@ -420,20 +429,10 @@ Function that initializes the user interface
 public void setup() {
   // create window
   
+  
   arial_bold = createFont("Arial Bold", 12);
   arial = createFont("Arial", 12);
-  // create the buttons
-  btn_serial_up = new Button("^", serial_x_pos+140, serial_y_pos+10, 40, 20);
-  btn_serial_dn = new Button("v", serial_x_pos+140, serial_y_pos+50, 40, 20);
-  btn_serial_connect = new Button("Connect", serial_x_pos+300, serial_y_pos+10, 100, 55);
-  btn_serial_disconnect = new Button("Disconnect", serial_x_pos+190, serial_y_pos+45, 100, 25);
-  btn_serial_list_refresh = new Button("Refresh", serial_x_pos+190, serial_y_pos+10, 100, 25);
-
-  // get the list of serial ports on the computer
-  serial_list = Serial.list()[serial_list_index];
-
-  //println(Serial.list());
-  //println(Serial.list().length);
+  tx_json = new JSONObject();
 
   // get the number of serial ports in the list
   num_serial_ports = Serial.list().length;
@@ -441,157 +440,255 @@ public void setup() {
   cp5 = new ControlP5(this);
 
   cp5.addNumberbox("kp")
-     .setPosition(100,200)
-     .setSize(100,14)
-     .setRange(0,200)
-     .setMultiplier(0.01f) // set the sensitifity of the numberbox
-     .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-     .setValue(numberBoxKp)
-     ;
+  .setPosition(tunning_values_x_pos,tunning_values_y_pos)
+  .setSize(110,25)
+  .setRange(0,20)
+  .setMultiplier(0.01f) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKp)
+  .setColorBackground(color(0xff54f367))
+  .setColorForeground(color(0xff02657d))
+  .setColorValue(color(0xff000000))
+  .setColorActive(color(0xffec0808))
+  .setColorCaptionLabel(color(0xffffffff))
+  ;
 
-   cp5.addNumberbox("kd")
-      .setPosition(150,200)
-      .setSize(100,14)
-      .setRange(0,20)
-      .setMultiplier(0.01f) // set the sensitifity of the numberbox
-      .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
-      .setValue(numberBoxKd)
-      ;
+  cp5.addNumberbox("kd")
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos)
+  .setSize(110,25)
+  .setRange(0,20)
+  .setMultiplier(0.01f) // set the sensitifity of the numberbox
+  .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
+  .setValue(numberBoxKd)
+  .setColorBackground(color(0xff54f367))
+  .setColorForeground(color(0xff02657d))
+  .setColorValue(color(0xff000000))
+  .setColorActive(color(0xffec0808))
+  .setColorCaptionLabel(color(0xffffffff))
+  ;
 
+  // create a DropdownList,
+  d1 = cp5.addDropdownList("serialPortList")
+  .setPosition(tunning_values_x_pos, tunning_values_y_pos+50)
+  .setOpen(false)
+  .setBackgroundColor(color(0xff216329))
+  .setColorActive(color(0xff216329))
+  .setColorBackground(color(0xff54f367))
+  .setColorCaptionLabel(color(0xff216329))
+  .setColorForeground(color(0xff216329))
+  .setColorLabel(color(0xff000000))
+  .setColorValue(color(0xff216329))
+  .setColorValueLabel(color(0xff000000))
+  .setItemHeight(25)
+  .setBarHeight(25)
+  .setWidth(110);
+  ;
+  customize(d1);
 
+  // create a toggle and change the default look to a (on/off) switch look
+  cp5.addToggle("connect")
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos+50)
+  .setSize(50,25)
+  .setValue(false)
+  .setMode(ControlP5.SWITCH)
+  .setColorBackground(color(0xff5c5c5c))
+  .setColorActive(color(0xfff35454))
+  ;
+  cp5.addToggle("enableMotors")
+  .setPosition(tunning_values_x_pos+210,tunning_values_y_pos+50)
+  .setSize(50,25)
+  .setValue(false)
+  .setMode(ControlP5.SWITCH)
+  .setColorBackground(color(0xff5c5c5c))
+  .setColorActive(color(0xfff35454))
+  ;
+
+  cp5.addButton("transmitValues")
+  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos)
+  .setSize(100,25)
+  .setValue(0)
+  .setColorActive(color(0xff6fe619))
+  .setColorForeground(color(0xff216329))
+  .setColorBackground(color(0xff54f367))
+  .setColorLabel(color(0xff000000))
+  ;
+
+  cp5.addButton("refreshPorts")
+  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
+  .setSize(100,25)
+  .setValue(0)
+  .setColorActive(color(0xff6fe619))
+  .setColorForeground(color(0xff216329))
+  .setColorBackground(color(0xff54f367))
+  .setColorLabel(color(0xff000000))
+  ;
+
+  myTextarea = cp5.addTextarea("txt")
+                  .setPosition(tunning_values_x_pos,tunning_values_y_pos+100)
+                  .setSize(380, 200)
+                  .setFont(createFont("", 10))
+                  .setLineHeight(14)
+                  .setColor(color(0xff54f367))
+                  .setColorBackground(color(0xff383a39))
+                  .setColorForeground(color(0xff216329));
+  ;
+  console = cp5.addConsole(myTextarea);//
+
+  baseSpeedKnob = cp5.addKnob("baseSpeedValue")
+               .setRange(0,255)
+               .setValue(50)
+               .setPosition(tunning_values_x_pos+400,tunning_values_y_pos+100)
+               .setRadius(50)
+               .setNumberOfTickMarks(10)
+               .setTickMarkLength(4)
+               .snapToTickMarks(true)
+               .setColorForeground(color(0xff54f367))
+               .setColorBackground(color(0xff216329))
+               .setColorActive(color(255,255,0))
+               .setDragDirection(Knob.HORIZONTAL)
+               ;
 }
 
-public void kp(float kp_value) {
-  numberBoxKp = kp_value;
-  println("kp_value:"+numberBoxKp);
-}
-
-public void kd(float kd_value) {
-  numberBoxKd = kd_value;
-  println("kd_value:"+numberBoxKd);
-}
-
-/**
-Main function to create the user interface
-@param none
-@return void
-*/
-public void draw()
-{
-  background(background_color);
-  drawAccelerometerGraph();
-  drawSpeedValuesGraph();
-  drawSensorArrayGraph();
-  drawMotorDriverGraph();
-  btn_serial_up.Draw();
-  btn_serial_dn.Draw();
-  btn_serial_connect.Draw();
-  btn_serial_disconnect.Draw();
-  btn_serial_list_refresh.Draw();
-  // draw the text box containing the selected serial port
-  DrawTextBox("Select Port", serial_list, serial_x_pos+10, serial_y_pos+10, 120, 60);
-  logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
-  logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
-}
-
-public void mousePressed() {
-  // up button clicked
-  if (btn_serial_up.MouseIsOver()) {
-    if (serial_list_index > 0) {
-      // move one position up in the list of serial ports
-      serial_list_index--;
-      serial_list = Serial.list()[serial_list_index];
-    }
-    print("Up");
+public void transmitValues(int theValue) {
+  println("Transmit values: "+theValue);
+  tx_json.setFloat("kp", numberBoxKp);
+  tx_json.setFloat("kd", numberBoxKd);
+  tx_json.setFloat("baseSpeed", baseSpeedValue);
+  if(serial_port != null)
+  {
+    // Why is this so slow? 2.5 seconds.
+    serial_port.write(tx_json.toString().replace("\n", "").replace("\r", ""));
+    serial_port.write('\n');
+    println("Sending JSON though the UART: "+tx_json.toString().replace("\n", "").replace("\r", ""));
   }
-  // down button clicked
-  if (btn_serial_dn.MouseIsOver()) {
-    if (serial_list_index < (num_serial_ports - 1)) {
-      // move one position down in the list of serial ports
-      serial_list_index++;
-      serial_list = Serial.list()[serial_list_index];
-    }
-    print("Down");
+}
+
+  public void refreshPorts(int theValue) {
+    println("Refresh ports: "+theValue);
+    customize(d1);
   }
-  // Connect button clicked
-  if (btn_serial_connect.MouseIsOver()) {
-    if (serial_port == null) {
-      // connect to the selected serial port
-      try{
-        serial_port = new Serial(this, Serial.list()[serial_list_index], 9600);
+
+  public void connect(boolean theFlag) {
+    if(theFlag==true) {
+      if (serial_port == null) {
+        // connect to the selected serial port
+        try{
+          serial_port = new Serial(this, Serial.list()[serial_list_index], COM_BAUDRATE);
+          serial_port.bufferUntil('\n');
+        }
+        catch (Exception e) {
+          println(e);
+        }
+        cp5.getController("connect").setColorActive(color(0xff54f367));
+        cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
+        cp5.getController("serialPortList").setLock(true);
+        println("Connect");
+
       }
-      catch (Exception e) {
-        println(e);
+    } else {
+      if (serial_port != null) {
+        // disconnect from the serial port
+        serial_port.stop();
+        serial_port = null;
+        cp5.getController("connect").setColorActive(color(0xfff35454));
+        cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
+        cp5.getController("serialPortList").setLock(false);
+        println("Disconnect");
+
       }
-      print("Connect");
     }
   }
-  // Disconnect button clicked
-  if (btn_serial_disconnect.MouseIsOver()) {
-    if (serial_port != null) {
+
+  public void enableMotors(boolean theFlag) {
+    if(theFlag==true) {
+      cp5.getController("enableMotors").setColorActive(color(0xff54f367));
+      cp5.getController("enableMotors").setColorBackground(color(0xff5c5c5c));
+      tx_json.setInt("enable", 1);
+      println("Enable motors: ON");
+    } else {
       // disconnect from the serial port
-      serial_port.stop();
-      serial_port = null;
-      print("Disconnect");
+      cp5.getController("enableMotors").setColorActive(color(0xfff35454));
+      cp5.getController("enableMotors").setColorBackground(color(0xff5c5c5c));
+      tx_json.setInt("enable", 0);
+      println("Enable motors: OFF");
+    }
+    if(serial_port != null)
+    {
+      // Why is this so slow? 2.5 seconds.
+      serial_port.write(tx_json.toString().replace("\n", "").replace("\r", ""));
+      serial_port.write('\n');
+      println("Sending JSON though the UART: "+tx_json.toString().replace("\n", "").replace("\r", ""));
     }
   }
-  // Refresh button clicked
-  if (btn_serial_list_refresh.MouseIsOver()) {
-    // get the serial port list and length of the list
-    serial_list = Serial.list()[serial_list_index];
+
+  public void controlEvent(ControlEvent theEvent) {
+    // DropdownList is of type ControlGroup.
+    // A controlEvent will be triggered from inside the ControlGroup class.
+    // therefore you need to check the originator of the Event with
+    // if (theEvent.isGroup())
+    // to avoid an error message thrown by controlP5.
+
+    if (theEvent.isGroup()) {
+      // check if the Event was triggered from a ControlGroup
+      println("event from group : "+theEvent.getGroup().getValue()+" from "+theEvent.getGroup());
+    }
+    else if (theEvent.isController()) {
+      if (theEvent.isFrom(cp5.getController("serialPortList"))) {
+        if (serial_port == null) {
+          // connect to the selected serial port
+          try{
+            //serial_port = new Serial(this, Serial.list()[int(theEvent.getController().getValue())], 9600);
+            serial_list_index = PApplet.parseInt(theEvent.getController().getValue());
+            //serial_port.bufferUntil('\n');
+          }
+          catch (Exception e) {
+            println(e);
+          }
+          println("Connect");
+        }
+      }
+    }
+  }
+
+  public void customize(DropdownList ddl) {
+    // a convenience function to customize a DropdownList
+    ddl.clear();
+    ddl.getCaptionLabel().set("Serial Ports");
     num_serial_ports = Serial.list().length;
-  }
-}
-
-// function for drawing a text box with title and contents
-public void DrawTextBox(String title, String str, int x, int y, int w, int h)
-{
-  fill(255);
-  rect(x, y, w, h);
-  fill(0);
-  textAlign(LEFT);
-  textSize(14);
-  text(title, x + 10, y + 10, w - 20, 20);
-  textSize(12);
-  text(str, x + 10, y + 40, w - 20, h - 10);
-}
-
-// button class used for all buttons
-class Button {
-  String label;
-  float x;    // top left corner x position
-  float y;    // top left corner y position
-  float w;    // width of button
-  float h;    // height of button
-
-  // constructor
-  Button(String labelB, float xpos, float ypos, float widthB, float heightB) {
-    label = labelB;
-    x = xpos;
-    y = ypos;
-    w = widthB;
-    h = heightB;
-  }
-
-  // draw the button in the window
-  public void Draw() {
-    fill(218);
-    stroke(141);
-    rect(x, y, w, h, 10);
-    textAlign(CENTER, CENTER);
-    fill(0);
-    text(label, x + (w / 2), y + (h / 2));
-  }
-
-  // returns true if the mouse cursor is over the button
-  public boolean MouseIsOver() {
-    if (mouseX > x && mouseX < (x + w) && mouseY > y && mouseY < (y + h)) {
-      return true;
+    println("num_serial_ports: "+num_serial_ports);
+    for (int i=0;i<num_serial_ports;i++) {
+      //println(Serial.list()[i]);
+      ddl.addItem(Serial.list()[i], i);
     }
-    return false;
   }
-}
-  public void settings() {  size(1280, 720); }
+
+  public void kp(float kp_value) {
+    numberBoxKp = kp_value;
+    println("kp_value:"+numberBoxKp);
+  }
+
+  public void kd(float kd_value) {
+    numberBoxKd = kd_value;
+    println("kd_value:"+numberBoxKd);
+  }
+
+  /**
+  Main function to create the user interface
+  @param none
+  @return void
+  */
+  public void draw()
+  {
+    background(background_color);
+    drawAccelerometerGraph();
+    drawSpeedValuesGraph();
+    drawSensorArrayGraph();
+    drawMotorDriverGraph();
+
+    logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
+    logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
+  }
+  public void settings() {  size(1280, 720);  smooth(4); }
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "velociruabtor_v2_ui" };
     if (passedArgs != null) {
