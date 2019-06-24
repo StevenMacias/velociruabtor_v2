@@ -9,27 +9,27 @@
 
 Accelerometer::Accelerometer()
 {
-  
+
 }
 
 
 void Accelerometer::getData()
 {
   // get a reading
-  int xVal = analogRead(0);
-  int yVal = analogRead(1);
-  int zVal = analogRead(2);
-  
+  int xVal = analogRead(A1);
+  int yVal = analogRead(A0);
+  int zVal = analogRead(A14);
+
   // Convert raw values to 'milli-Gs"
   long xScaled = map(xVal, xMin, xMax, -1000, 1000);
   long yScaled = map(yVal, yMin, yMax, -1000, 1000);
   long zScaled = map(zVal, zMin, zMax, -1000, 1000);
-  
+
   // re-scale to fractional +/- 1 Gs
   _xVal = xScaled / 1000.0;
   _yVal = yScaled / 1000.0;
   _zVal = zScaled / 1000.0;
-  
+
 }
 
 float Accelerometer::getX()

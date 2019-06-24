@@ -32,7 +32,7 @@ Purpose: Develop a line follower using Teensy 3.2
 #define speedturn 180
 
 
-QTRSensorsRC qtrrc((unsigned char[]) {A3, A4, A5, A6, A7, A8, A9, 12} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
+QTRSensorsRC qtrrc((unsigned char[]) {A2, A3, A4, A5, A6, A7, A8, A9} ,NUM_SENSORS, 2500, QTR_NO_EMITTER_PIN);
 StaticJsonDocument<1024> json;
 StaticJsonDocument<512> rx_json;
 Accelerometer accel;
@@ -43,8 +43,8 @@ int motorValues[7];
 int lastError = 0;
 unsigned long start_time = millis();
 unsigned long end_time = millis();
-Encoder encoderLeft(2, 9);
-Encoder encoderRight(11, 10); // Pins inversed
+Encoder encoderLeft(2, 10);
+Encoder encoderRight(12, 11); // Pins inversed
 float rpm_encoder_left = 0;
 float rpm_encoder_right = 0;
 float rpm_wheel_left = 0;
@@ -119,12 +119,12 @@ Calibrates the QTR-RC Sensor array
 */
 void calibrateQtrc()
 {
-  digitalWrite(LED_BUILTIN, HIGH);
+  //digitalWrite(LED_BUILTIN, HIGH);
   for(int i = 0; i<300; i++)
   {
     qtrrc.calibrate();
   }
-  digitalWrite(LED_BUILTIN, LOW);
+  //digitalWrite(LED_BUILTIN, LOW);
 }
 
 /**
@@ -134,6 +134,11 @@ Function that initializes the system
 */
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(A1, INPUT);
+  pinMode(A0, INPUT);
+  pinMode(A14, INPUT);
+  //digitalWrite(LED_BUILTIN, HIGH);
   json.clear();
   // Configure Bluetooth UART
   BT_SERIAL.begin(BT_UART_BAUDRATE);
@@ -145,6 +150,7 @@ void setup()
   //motor_driver.enableMotors();
   // Calibrate Sensors Array
   calibrateQtrc();
+  //digitalWrite(LED_BUILTIN, LOW);
 }
 
 /**

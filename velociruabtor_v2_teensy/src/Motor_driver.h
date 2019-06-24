@@ -1,12 +1,12 @@
 
 // Pinout
-const int pinPWMA = 5;
-const int pinAIN2 = 3;
-const int pinAIN1 = 4;
+const int pinPWMA = 3;
+const int pinAIN2 = 4;
+const int pinAIN1 = 5;
 const int pinBIN1 = 7;
 const int pinBIN2 = 8;
-const int pinPWMB = 6;
-const int pinSTBY = 13;
+const int pinPWMB = 9;
+const int pinSTBY = 6;
 
 const int waitTime = 2000;   //espera entre fases
 const int speed = 200;      //velocidad de giro
