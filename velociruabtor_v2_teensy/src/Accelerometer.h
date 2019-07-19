@@ -7,14 +7,14 @@ const int selfTest = 13;
 
 // min/max values for each axis
 // measured from calibration (see the
-const int xMin = 400; // (-1 G)
-const int xMax = 639; // (+1 G)
+const int xMin = 707; // (-1 G)
+const int xMax = 940; // (+1 G)
 
-const int yMin = 339; // (-1 G)
-const int yMax = 630; // (+1 G)
+const int yMin = 700; // (-1 G)
+const int yMax = 930; // (+1 G)
 
-const int zMin = 414; // (-1 G)
-const int zMax = 643; // (+1 G)
+const int zMin = 635; // (-1 G)
+const int zMax = 930; // (+1 G)
 
 class Accelerometer
 {

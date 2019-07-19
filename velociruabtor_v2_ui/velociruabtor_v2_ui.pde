@@ -355,6 +355,7 @@ void serialEvent(Serial serial_port) {
   try {
     String buffer = serial_port.readStringUntil('\n');
     if (buffer != null) {
+      //println(buffer);
       JSONObject json = parseJSONObject(buffer);
       if (json == null) {
         println("JSONObject could not be parsed");
@@ -409,6 +410,7 @@ Function that initializes the user interface
 */
 void setup() {
   // create window
+  frameRate(24);
   size(1280, 720);
   smooth(4);
   arial_bold = createFont("Arial Bold", 12);
@@ -461,6 +463,7 @@ void setup() {
   .setColorValue(color(#216329))
   .setColorValueLabel(color(#000000))
   .setItemHeight(25)
+  .setHeight(200)
   .setBarHeight(25)
   .setWidth(110);
   ;
@@ -495,6 +498,16 @@ void setup() {
   ;
 
   cp5.addButton("refreshPorts")
+  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
+  .setSize(100,25)
+  .setValue(0)
+  .setColorActive(color(#6fe619))
+  .setColorForeground(color(#216329))
+  .setColorBackground(color(#54f367))
+  .setColorLabel(color(#000000))
+  ;
+
+  cp5.addButton("calibrateSensors")
   .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
   .setSize(100,25)
   .setValue(0)
@@ -563,6 +576,7 @@ public void transmitValues(int theValue) {
         cp5.getController("connect").setColorActive(color(#54f367));
         cp5.getController("connect").setColorBackground(color(#5c5c5c));
         cp5.getController("serialPortList").setLock(true);
+        cp5.getController("serialPortList").setColorBackground(color(#5c5c5c));
         println("Connect");
 
       }
@@ -574,6 +588,7 @@ public void transmitValues(int theValue) {
         cp5.getController("connect").setColorActive(color(#f35454));
         cp5.getController("connect").setColorBackground(color(#5c5c5c));
         cp5.getController("serialPortList").setLock(false);
+        cp5.getController("serialPortList").setColorBackground(color(#54f367));
         println("Disconnect");
 
       }
@@ -627,6 +642,11 @@ public void transmitValues(int theValue) {
           }
           println("Connect");
         }
+      }else if(theEvent.isFrom(cp5.getController("baseSpeedValue")))
+      {
+        println("BaseSpeedValue Event");
+        transmitValues(0);
+        delay(50);
       }
     }
   }

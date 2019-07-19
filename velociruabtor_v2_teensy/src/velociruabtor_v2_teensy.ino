@@ -201,7 +201,7 @@ void computePidAndDrive()
   if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
   if (rightMotorSpeed < 0)rightMotorSpeed = 0;
   if (leftMotorSpeed < 0)leftMotorSpeed = 0;
-  motor_driver.runMotorDriver(rightMotorSpeed, HIGH, LOW, leftMotorSpeed, LOW, HIGH, enable);
+  motor_driver.runMotorDriver(rightMotorSpeed, LOW, HIGH, leftMotorSpeed, HIGH, LOW, enable);
 }
 
 void calculateRPM()
