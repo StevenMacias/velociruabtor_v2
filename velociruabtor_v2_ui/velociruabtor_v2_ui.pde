@@ -49,6 +49,7 @@ static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0;
 public float numberBoxKd = 2.0;
+public boolean calibrateSensorsFlag = false;
 DropdownList d1;
 JSONObject tx_json;
 Textarea myTextarea;
@@ -508,7 +509,7 @@ void setup() {
   ;
 
   cp5.addButton("calibrateSensors")
-  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+400,tunning_values_y_pos+50)
   .setSize(100,25)
   .setValue(0)
   .setColorActive(color(#6fe619))
@@ -516,6 +517,17 @@ void setup() {
   .setColorBackground(color(#54f367))
   .setColorLabel(color(#000000))
   ;
+
+  cp5.addButton("consoleClear")
+  .setPosition(tunning_values_x_pos,tunning_values_y_pos+310)
+  .setSize(100,25)
+  .setValue(0)
+  .setColorActive(color(#6fe619))
+  .setColorForeground(color(#216329))
+  .setColorBackground(color(#54f367))
+  .setColorLabel(color(#000000))
+  ;
+
 
   myTextarea = cp5.addTextarea("txt")
                   .setPosition(tunning_values_x_pos,tunning_values_y_pos+100)
@@ -562,7 +574,23 @@ public void transmitValues(int theValue) {
     customize(d1);
   }
 
+  public void calibrateSensors(int theValue)
+  {
+    if((calibrateSensorsFlag == false))
+    {
+        println("Calibrate Sensors: "+theValue);
+        calibrateSensorsFlag = true;
+
+    }
+  }
+
+  public void consoleClear()
+  {
+    console.clear();
+  }
+
   void connect(boolean theFlag) {
+    boolean port_error = false;
     if(theFlag==true) {
       if (serial_port == null) {
         // connect to the selected serial port
@@ -572,12 +600,17 @@ public void transmitValues(int theValue) {
         }
         catch (Exception e) {
           println(e);
+          port_error = true;
         }
-        cp5.getController("connect").setColorActive(color(#54f367));
-        cp5.getController("connect").setColorBackground(color(#5c5c5c));
-        cp5.getController("serialPortList").setLock(true);
-        cp5.getController("serialPortList").setColorBackground(color(#5c5c5c));
-        println("Connect");
+        if(port_error == false)
+        {
+          lockButtons();
+        }else
+        {
+          unlockButtons();
+          //put the switch in off position
+          cp5.getController("connect").setValue(0);
+        }
 
       }
     } else {
@@ -585,14 +618,29 @@ public void transmitValues(int theValue) {
         // disconnect from the serial port
         serial_port.stop();
         serial_port = null;
-        cp5.getController("connect").setColorActive(color(#f35454));
-        cp5.getController("connect").setColorBackground(color(#5c5c5c));
-        cp5.getController("serialPortList").setLock(false);
-        cp5.getController("serialPortList").setColorBackground(color(#54f367));
-        println("Disconnect");
-
+        unlockButtons();
       }
     }
+  }
+
+  void lockButtons()
+  {
+    cp5.getController("connect").setColorActive(color(#54f367));
+    cp5.getController("connect").setColorBackground(color(#5c5c5c));
+    cp5.getController("serialPortList").setLock(true);
+    cp5.getController("serialPortList").setColorBackground(color(#5c5c5c));
+    cp5.getController("calibrateSensors").setColorBackground(color(#5c5c5c));
+    println("Connect");
+  }
+
+  void unlockButtons()
+  {
+    cp5.getController("connect").setColorActive(color(#f35454));
+    cp5.getController("connect").setColorBackground(color(#5c5c5c));
+    cp5.getController("serialPortList").setLock(false);
+    cp5.getController("serialPortList").setColorBackground(color(#54f367));
+    cp5.getController("calibrateSensors").setColorBackground(color(#54f367));
+    println("Disconnect");
   }
 
   void enableMotors(boolean theFlag) {
@@ -688,4 +736,11 @@ public void transmitValues(int theValue) {
 
     logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
     logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
+
+    if(calibrateSensorsFlag == true)
+    {
+      cp5.getController("calibrateSensors").setColorBackground(color(#f56302));
+    }else{
+      cp5.getController("calibrateSensors").setColorBackground(color(#54f367));
+    }
   }

@@ -68,6 +68,7 @@ static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0f;
 public float numberBoxKd = 2.0f;
+public boolean calibrateSensorsFlag = false;
 DropdownList d1;
 JSONObject tx_json;
 Textarea myTextarea;
@@ -527,7 +528,7 @@ public void setup() {
   ;
 
   cp5.addButton("calibrateSensors")
-  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+400,tunning_values_y_pos+50)
   .setSize(100,25)
   .setValue(0)
   .setColorActive(color(0xff6fe619))
@@ -535,6 +536,17 @@ public void setup() {
   .setColorBackground(color(0xff54f367))
   .setColorLabel(color(0xff000000))
   ;
+
+  cp5.addButton("consoleClear")
+  .setPosition(tunning_values_x_pos,tunning_values_y_pos+310)
+  .setSize(100,25)
+  .setValue(0)
+  .setColorActive(color(0xff6fe619))
+  .setColorForeground(color(0xff216329))
+  .setColorBackground(color(0xff54f367))
+  .setColorLabel(color(0xff000000))
+  ;
+
 
   myTextarea = cp5.addTextarea("txt")
                   .setPosition(tunning_values_x_pos,tunning_values_y_pos+100)
@@ -581,7 +593,23 @@ public void transmitValues(int theValue) {
     customize(d1);
   }
 
+  public void calibrateSensors(int theValue)
+  {
+    if((calibrateSensorsFlag == false))
+    {
+        println("Calibrate Sensors: "+theValue);
+        calibrateSensorsFlag = true;
+
+    }
+  }
+
+  public void consoleClear()
+  {
+    console.clear();
+  }
+
   public void connect(boolean theFlag) {
+    boolean port_error = false;
     if(theFlag==true) {
       if (serial_port == null) {
         // connect to the selected serial port
@@ -591,12 +619,17 @@ public void transmitValues(int theValue) {
         }
         catch (Exception e) {
           println(e);
+          port_error = true;
         }
-        cp5.getController("connect").setColorActive(color(0xff54f367));
-        cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
-        cp5.getController("serialPortList").setLock(true);
-        cp5.getController("serialPortList").setColorBackground(color(0xff5c5c5c));
-        println("Connect");
+        if(port_error == false)
+        {
+          lockButtons();
+        }else
+        {
+          unlockButtons();
+          //put the switch in off position
+          cp5.getController("connect").setValue(0);
+        }
 
       }
     } else {
@@ -604,14 +637,29 @@ public void transmitValues(int theValue) {
         // disconnect from the serial port
         serial_port.stop();
         serial_port = null;
-        cp5.getController("connect").setColorActive(color(0xfff35454));
-        cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
-        cp5.getController("serialPortList").setLock(false);
-        cp5.getController("serialPortList").setColorBackground(color(0xff54f367));
-        println("Disconnect");
-
+        unlockButtons();
       }
     }
+  }
+
+  public void lockButtons()
+  {
+    cp5.getController("connect").setColorActive(color(0xff54f367));
+    cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
+    cp5.getController("serialPortList").setLock(true);
+    cp5.getController("serialPortList").setColorBackground(color(0xff5c5c5c));
+    cp5.getController("calibrateSensors").setColorBackground(color(0xff5c5c5c));
+    println("Connect");
+  }
+
+  public void unlockButtons()
+  {
+    cp5.getController("connect").setColorActive(color(0xfff35454));
+    cp5.getController("connect").setColorBackground(color(0xff5c5c5c));
+    cp5.getController("serialPortList").setLock(false);
+    cp5.getController("serialPortList").setColorBackground(color(0xff54f367));
+    cp5.getController("calibrateSensors").setColorBackground(color(0xff54f367));
+    println("Disconnect");
   }
 
   public void enableMotors(boolean theFlag) {
@@ -707,6 +755,13 @@ public void transmitValues(int theValue) {
 
     logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
     logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
+
+    if(calibrateSensorsFlag == true)
+    {
+      cp5.getController("calibrateSensors").setColorBackground(color(0xfff56302));
+    }else{
+      cp5.getController("calibrateSensors").setColorBackground(color(0xff54f367));
+    }
   }
   public void settings() {  size(1280, 720);  smooth(4); }
   static public void main(String[] passedArgs) {
