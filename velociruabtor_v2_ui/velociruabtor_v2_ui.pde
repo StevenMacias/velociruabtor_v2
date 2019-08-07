@@ -49,10 +49,13 @@ static final int serial_x_pos       = 100;
 static final int serial_y_pos       = 600;
 public float numberBoxKp = 1.0;
 public float numberBoxKd = 2.0;
-public boolean calibrateSensorsFlag = false;
+public int calibrateSensorsStateTx = 0;
+public int calibrateSensorsStateRx = 0;
+public boolean lets_start;
 DropdownList d1;
 JSONObject tx_json;
 Textarea myTextarea;
+Textarea myTextarea2;
 Println console;
 int baseSpeedValue = 100;
 Knob baseSpeedKnob;
@@ -393,6 +396,13 @@ void serialEvent(Serial serial_port) {
         rpm_wheel_left = json.getFloat("rpm_wheel_left");
         rpm_wheel_right = json.getFloat("rpm_wheel_right");
         average_speed_m_s = json.getFloat("average_speed_m_s");
+        calibrateSensorsStateRx = json.getInt("calibrateSensorsState");
+        if((calibrateSensorsStateRx==2)&&((calibrateSensorsStateTx==2)))
+        {
+          calibrateSensorsStateTx=0;
+        }
+        myTextarea2.setText(json.toString());
+
       }
     } else
     {
@@ -411,7 +421,7 @@ Function that initializes the user interface
 */
 void setup() {
   // create window
-  frameRate(24);
+  frameRate(20);
   size(1280, 720);
   smooth(4);
   arial_bold = createFont("Arial Bold", 12);
@@ -479,6 +489,16 @@ void setup() {
   .setColorBackground(color(#5c5c5c))
   .setColorActive(color(#f35454))
   ;
+
+  cp5.addToggle("transmit")
+  .setPosition(tunning_values_x_pos+520,tunning_values_y_pos+50)
+  .setSize(50,25)
+  .setValue(false)
+  .setMode(ControlP5.SWITCH)
+  .setColorBackground(color(#5c5c5c))
+  .setColorActive(color(#f35454))
+  ;
+
   cp5.addToggle("enableMotors")
   .setPosition(tunning_values_x_pos+210,tunning_values_y_pos+50)
   .setSize(50,25)
@@ -540,6 +560,16 @@ void setup() {
   ;
   console = cp5.addConsole(myTextarea);//
 
+  myTextarea2 = cp5.addTextarea("rx_json_textarea")
+                  .setPosition(tunning_values_x_pos+700,tunning_values_y_pos-100)
+                  .setSize(380, 400)
+                  .setFont(createFont("", 10))
+                  .setLineHeight(14)
+                  .setColor(color(#54f3d3))
+                  .setColorBackground(color(#383a39))
+                  .setColorForeground(color(#216329));
+  ;
+
   baseSpeedKnob = cp5.addKnob("baseSpeedValue")
                .setRange(0,255)
                .setValue(50)
@@ -560,12 +590,16 @@ public void transmitValues(int theValue) {
   tx_json.setFloat("kp", numberBoxKp);
   tx_json.setFloat("kd", numberBoxKd);
   tx_json.setFloat("baseSpeed", baseSpeedValue);
+  tx_json.setInt("calibrateSensorsState", calibrateSensorsStateTx);
+  tx_json.setBoolean("lets_start", lets_start);
   if(serial_port != null)
   {
     // Why is this so slow? 2.5 seconds.
     serial_port.write(tx_json.toString().replace("\n", "").replace("\r", ""));
     serial_port.write('\n');
     println("Sending JSON though the UART: "+tx_json.toString().replace("\n", "").replace("\r", ""));
+    calibrateSensorsStateTx = 2;
+    //delay(200);
   }
 }
 
@@ -576,10 +610,11 @@ public void transmitValues(int theValue) {
 
   public void calibrateSensors(int theValue)
   {
-    if((calibrateSensorsFlag == false))
+    //if((calibrateSensorsStateTx == 1))
     {
         println("Calibrate Sensors: "+theValue);
-        calibrateSensorsFlag = true;
+        calibrateSensorsStateTx = 1;
+        transmitValues(0);
 
     }
   }
@@ -596,6 +631,7 @@ public void transmitValues(int theValue) {
         // connect to the selected serial port
         try{
           serial_port = new Serial(this, Serial.list()[serial_list_index], COM_BAUDRATE);
+          serial_port.clear();
           serial_port.bufferUntil('\n');
         }
         catch (Exception e) {
@@ -616,10 +652,22 @@ public void transmitValues(int theValue) {
     } else {
       if (serial_port != null) {
         // disconnect from the serial port
+        serial_port.clear();
         serial_port.stop();
         serial_port = null;
         unlockButtons();
       }
+    }
+  }
+
+  void transmit(boolean theFlag) {
+    boolean port_error = false;
+    if(theFlag==true) {
+      lets_start=true;
+      transmitValues(0);
+    } else {
+      lets_start=false;
+      transmitValues(0);
     }
   }
 
@@ -659,9 +707,7 @@ public void transmitValues(int theValue) {
     if(serial_port != null)
     {
       // Why is this so slow? 2.5 seconds.
-      serial_port.write(tx_json.toString().replace("\n", "").replace("\r", ""));
-      serial_port.write('\n');
-      println("Sending JSON though the UART: "+tx_json.toString().replace("\n", "").replace("\r", ""));
+      transmitValues(0);
     }
   }
 
@@ -688,13 +734,12 @@ public void transmitValues(int theValue) {
           catch (Exception e) {
             println(e);
           }
-          println("Connect");
         }
       }else if(theEvent.isFrom(cp5.getController("baseSpeedValue")))
       {
         println("BaseSpeedValue Event");
         transmitValues(0);
-        delay(50);
+        //delay(50);
       }
     }
   }
@@ -737,10 +782,12 @@ public void transmitValues(int theValue) {
     logicMotorDriver(1,AIN1,AIN2,PWMA,STBY);
     logicMotorDriver(2,BIN1,BIN2,PWMB,STBY);
 
-    if(calibrateSensorsFlag == true)
+    if(encoder_elapsed_time>300)
     {
+      cursor(WAIT);
       cp5.getController("calibrateSensors").setColorBackground(color(#f56302));
     }else{
+      cursor(ARROW);
       cp5.getController("calibrateSensors").setColorBackground(color(#54f367));
     }
   }
