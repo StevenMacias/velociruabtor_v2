@@ -303,7 +303,7 @@ void drawSensorArrayGraph()
   text("Min: ", (calib_values_x_pos), (calib_values_y_pos+20));
   text("Max: ", (calib_values_x_pos), (calib_values_y_pos+40));
   textFont(arial);
-  for (int i = 0; i<array_calib_min.size(); i++)
+  for (int i = (array_calib_min.size()-1); (i>0); i--)
   {
     text(temp_min_values[i], (calib_values_x_pos+(40*(i+1))), calib_values_y_pos+20);
     text(temp_max_values[i], (calib_values_x_pos+(40*(i+1))), calib_values_y_pos+40);
@@ -449,7 +449,7 @@ void setup() {
 
   cp5.addNumberbox("kd")
   .setPosition(tunning_values_x_pos+150,tunning_values_y_pos)
-  .setSize(110,25)
+  .setSize(100,25)
   .setRange(0,20)
   .setMultiplier(0.01) // set the sensitifity of the numberbox
   .setDirection(Controller.HORIZONTAL) // change the control direction to left/right
@@ -482,7 +482,7 @@ void setup() {
 
   // create a toggle and change the default look to a (on/off) switch look
   cp5.addToggle("connect")
-  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+400,tunning_values_y_pos+50)
   .setSize(50,25)
   .setValue(false)
   .setMode(ControlP5.SWITCH)
@@ -491,7 +491,7 @@ void setup() {
   ;
 
   cp5.addToggle("transmit")
-  .setPosition(tunning_values_x_pos+520,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+460,tunning_values_y_pos+50)
   .setSize(50,25)
   .setValue(false)
   .setMode(ControlP5.SWITCH)
@@ -500,7 +500,7 @@ void setup() {
   ;
 
   cp5.addToggle("enableMotors")
-  .setPosition(tunning_values_x_pos+210,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+520,tunning_values_y_pos+50)
   .setSize(50,25)
   .setValue(false)
   .setMode(ControlP5.SWITCH)
@@ -519,7 +519,7 @@ void setup() {
   ;
 
   cp5.addButton("refreshPorts")
-  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+150,tunning_values_y_pos+50)
   .setSize(100,25)
   .setValue(0)
   .setColorActive(color(#6fe619))
@@ -529,7 +529,7 @@ void setup() {
   ;
 
   cp5.addButton("calibrateSensors")
-  .setPosition(tunning_values_x_pos+400,tunning_values_y_pos+50)
+  .setPosition(tunning_values_x_pos+280,tunning_values_y_pos+50)
   .setSize(100,25)
   .setValue(0)
   .setColorActive(color(#6fe619))
@@ -597,9 +597,13 @@ public void transmitValues(int theValue) {
     // Why is this so slow? 2.5 seconds.
     serial_port.write(tx_json.toString().replace("\n", "").replace("\r", ""));
     serial_port.write('\n');
+
     println("Sending JSON though the UART: "+tx_json.toString().replace("\n", "").replace("\r", ""));
-    calibrateSensorsStateTx = 2;
-    //delay(200);
+    println(tx_json.toString().length());
+    if(calibrateSensorsStateTx == 1){
+      calibrateSensorsStateTx = 2;
+    }
+    delay(100);
   }
 }
 

@@ -60,9 +60,16 @@ int enable = 0;
 float kp = 1;
 float kd = 1;
 int baseSpeed = 0;
+int maxSpeed = 255;
 int period = 200;
 unsigned long time_now = 0;
 boolean lets_start = false;
+
+const byte numChars = 512;
+char receivedChars[numChars];   // an array to store the received data
+boolean newData = false;
+
+
 /**
 Builds a JSON string that contains all the data regarging the line follower.
 @param none
@@ -131,13 +138,15 @@ void calibrateQtrc()
   for (int i; i < 20; i++) // calibrate for sometime by sliding the sensors across the line, or you may use auto-calibration instead
   { 	//Added open brace here
 
+    // GO TO RIGHT
     if ( i  <= 5 || i >= 15 ) // turn to the left and right to expose the sensors to the brightest and darkest readings that may be encountered
     {
-      motor_driver.runMotorDriver(100, LOW, HIGH, 100, LOW, HIGH, HIGH);
+      motor_driver.runMotorDriver(85, LOW, HIGH, 85, LOW, HIGH, HIGH);
     }
+    // GOT TO LEFT
     else
     {
-      motor_driver.runMotorDriver(100, HIGH, LOW, 100, HIGH, LOW, HIGH);
+      motor_driver.runMotorDriver(85, HIGH, LOW, 85, HIGH, LOW, HIGH);
     }
     qtrrc.calibrate();
     delay(20);
@@ -172,7 +181,7 @@ void setup()
   // Calibrate Sensors Array
   calibrateQtrc();
   //digitalWrite(LED_BUILTIN, LOW);
-  BT_SERIAL.setTimeout(50);
+  BT_SERIAL.setTimeout(200);
 }
 
 /**
@@ -204,11 +213,14 @@ void computePidAndDrive()
   position = qtrrc.readLine(sensorValues); // get calibrated readings along with the line position, refer to the QTR Sensors Arduino Library for more details on line position.
 
   if(position>6700){
-    motor_driver.runMotorDriver(speedturn, HIGH, LOW, speedturn, LOW, HIGH, enable);
+    //motor_driver.runMotorDriver(speedturn, HIGH, LOW, speedturn, LOW, HIGH, enable);
+    motor_driver.runMotorDriver(baseSpeed, HIGH, LOW, baseSpeed, HIGH, LOW, enable);
     return;
   }
   if(position<300){
-    motor_driver.runMotorDriver(speedturn, LOW, HIGH, speedturn, HIGH, LOW, enable);
+    //motor_driver.runMotorDriver(speedturn, LOW, HIGH, speedturn, HIGH, LOW, enable);
+    motor_driver.runMotorDriver(baseSpeed, LOW, HIGH, baseSpeed, LOW, HIGH, enable);
+
     return;
   }
 
@@ -219,11 +231,18 @@ void computePidAndDrive()
   int rightMotorSpeed = baseSpeed + motorSpeed;
   int leftMotorSpeed = baseSpeed - motorSpeed;
 
-  if (rightMotorSpeed > MaxSpeed ) rightMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
-  if (leftMotorSpeed > MaxSpeed ) leftMotorSpeed = MaxSpeed; // prevent the motor from going beyond max speed
+  if((baseSpeed+(baseSpeed*0.5)) > 255)
+  {
+    maxSpeed = 255u;
+  }else
+  {
+    maxSpeed = baseSpeed+(baseSpeed*0.25);
+  }
+  if (rightMotorSpeed > (maxSpeed) ) rightMotorSpeed = maxSpeed; // prevent the motor from going beyond max speed
+  if (leftMotorSpeed > maxSpeed ) leftMotorSpeed = maxSpeed; // prevent the motor from going beyond max speed
   if (rightMotorSpeed < 0)rightMotorSpeed = 0;
   if (leftMotorSpeed < 0)leftMotorSpeed = 0;
-  motor_driver.runMotorDriver(rightMotorSpeed, LOW, HIGH, leftMotorSpeed, HIGH, LOW, enable);
+  motor_driver.runMotorDriver(leftMotorSpeed, LOW, HIGH,rightMotorSpeed , HIGH, LOW, enable);
 }
 
 void calculateRPM()
@@ -286,40 +305,44 @@ void loop()
     baseSpeed = rx_json["baseSpeed"];
     calibrateSensorsState = rx_json["calibrateSensorsState"];
   }*/
-  if(BT_SERIAL.available() > 0) {
+  /*if(BT_SERIAL.available()) {
     //a= Serial.readString();// read the incoming data as string
-    BT_SERIAL.readBytesUntil('\n', serial_data, sizeof(serial_data)-1);
-    rx_json.clear();
-    DeserializationError err = deserializeJson(rx_json, serial_data,DeserializationOption::NestingLimit(4));
+    if(BT_SERIAL.readBytesUntil('\n', serial_data, sizeof(serial_data)-1) > 0){
+      rx_json.clear();
+      DeserializationError err = deserializeJson(rx_json, serial_data,DeserializationOption::NestingLimit(4));
 
-    switch (err.code()) {
-    case DeserializationError::Ok:
-        enable = rx_json["enable"];
-        kp = rx_json["kp"];
-        kd = rx_json["kd"];
-        baseSpeed = rx_json["baseSpeed"];
-        calibrateSensorsState = rx_json["calibrateSensorsState"];
-        lets_start = rx_json["lets_start"];
-        jsonError = 0;
-        break;
-    case DeserializationError::InvalidInput:
-        jsonError = 1;
-        digitalWrite(LED_BUILTIN,HIGH);
-        delay(50);
-        BT_SERIAL.flush();
-        digitalWrite(LED_BUILTIN,LOW);
-        break;
-    case DeserializationError::NoMemory:
-        jsonError = 2;
-        break;
-    default:
-        jsonError = 3;
-        break;
+      switch (err.code()) {
+      case DeserializationError::Ok:
+          enable = rx_json["enable"];
+          kp = rx_json["kp"];
+          kd = rx_json["kd"];
+          baseSpeed = rx_json["baseSpeed"];
+          calibrateSensorsState = rx_json["calibrateSensorsState"];
+          lets_start = rx_json["lets_start"];
+          jsonError = 0;
+          break;
+      case DeserializationError::InvalidInput:
+          jsonError = 1;
+          digitalWrite(LED_BUILTIN,HIGH);
+          delay(50);
+          BT_SERIAL.flush();
+          digitalWrite(LED_BUILTIN,LOW);
+          break;
+      case DeserializationError::NoMemory:
+          jsonError = 2;
+          break;
+      default:
+          jsonError = 3;
+          break;
+        }
+
+      sendJsonByBluetooth(true);
+      while (Serial.available() > 0) {
+        BT_SERIAL.read();
       }
 
-    sendJsonByBluetooth(true);
-
-  }
+    }
+  }*/
 
   if((calibrateSensorsState == 1)&&(lets_start ==1))
   {
@@ -327,4 +350,68 @@ void loop()
     calibrateQtrc();
   }
   //delay(22);
+
+  recvWithEndMarker();
+    showNewData();
+}
+
+void recvWithEndMarker() {
+    static byte ndx = 0;
+    char endMarker = '\n';
+    char rc;
+
+    while (BT_SERIAL.available() > 0 && newData == false) {
+        rc = BT_SERIAL.read();
+
+        if (rc != endMarker) {
+            receivedChars[ndx] = rc;
+            ndx++;
+            if (ndx >= numChars) {
+                ndx = numChars - 1;
+            }
+        }
+        else {
+            receivedChars[ndx] = '\n'; // terminate the string
+            receivedChars[ndx+1] = '\0'; // terminate the string
+            BT_SERIAL.print(ndx );
+            BT_SERIAL.print('\n');
+            ndx = 0;
+            newData = true;
+        }
+    }
+}
+
+void showNewData() {
+    if (newData == true) {
+      rx_json.clear();
+      DeserializationError err = deserializeJson(rx_json, receivedChars,DeserializationOption::NestingLimit(4));
+
+      switch (err.code()) {
+      case DeserializationError::Ok:
+          enable = rx_json["enable"];
+          kp = rx_json["kp"];
+          kd = rx_json["kd"];
+          baseSpeed = rx_json["baseSpeed"];
+          calibrateSensorsState = rx_json["calibrateSensorsState"];
+          lets_start = rx_json["lets_start"];
+          jsonError = 0;
+          break;
+      case DeserializationError::InvalidInput:
+          jsonError = 1;
+          digitalWrite(LED_BUILTIN,HIGH);
+          delay(50);
+          BT_SERIAL.flush();
+          digitalWrite(LED_BUILTIN,LOW);
+          break;
+      case DeserializationError::NoMemory:
+          jsonError = 2;
+          break;
+      default:
+          jsonError = 3;
+          break;
+        }
+
+      sendJsonByBluetooth(true);
+        newData = false;
+    }
 }
